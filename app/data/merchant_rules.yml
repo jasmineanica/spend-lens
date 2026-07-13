@@ -1,0 +1,58 @@
+# Ordered merchant keyword rules. First rule with a keyword that appears as a
+# substring of the normalized (lowercased) merchant wins, so more specific
+# categories are listed before broad ones (e.g. Coffee before Dining Out,
+# "uber eats" -> Dining Out before "uber" -> Transportation).
+
+- category: Coffee
+  keywords: [starbucks, "peet", philz, blue bottle, dunkin, coffee, "cafe", "café", espresso, caribou]
+
+- category: Subscriptions
+  keywords: [netflix, spotify, hulu, disney+, disneyplus, youtube premium, "apple.com/bill", "apple.com", adobe, notion, "github", openai, chatgpt, icloud, amazon prime, prime video, dropbox, patreon, medium, nyt, new york times]
+
+- category: Gym / Fitness
+  keywords: [equinox, planet fitness, crossfit, peloton, classpass, "yoga", pilates, gym, fitness]
+
+- category: Therapy / Counseling
+  keywords: [therapy, counseling, betterhelp, talkspace, "psycholog", therapist]
+
+- category: Medical
+  keywords: [pharmacy, cvs, walgreens, clinic, hospital, dental, dentist, kaiser, "one medical", doctor, "medical"]
+
+- category: Self-Care
+  keywords: [salon, "spa", nail, barber, haircut, sephora, ulta, aesthetic, waxing]
+
+- category: Alcohol / Bars
+  keywords: [brewery, tavern, "pub", liquor, bevmo, total wine, winery, cocktail, taproom, " bar"]
+
+- category: Dining Out
+  keywords: [doordash, uber eats, ubereats, grubhub, postmates, chipotle, mcdonald, restaurant, pizza, sushi, taco, thai, ramen, kitchen, grill, diner, bistro, "eatery", panera, sweetgreen, shake shack, "in-n-out", chick-fil-a]
+
+- category: Groceries
+  keywords: [safeway, trader joe, whole foods, costco, grocery, "market", aldi, kroger, wegmans, sprouts, ralphs, "food"]
+
+- category: Transportation
+  keywords: [uber, lyft, "bart", chevron, shell, exxon, mobil, "76 ", gas station, parking, clipper, "muni", caltrain, "toll", fastrak]
+
+- category: Entertainment
+  keywords: [amc, cinemark, regal, movie, ticketmaster, steam, playstation, xbox, nintendo, concert, "theater", theatre, live nation]
+
+- category: Clothing
+  keywords: [nike, zara, h&m, uniqlo, nordstrom, "gap", old navy, lululemon, "clothing", madewell, urban outfitters, adidas]
+
+- category: Phone & Internet
+  keywords: [verizon, at&t, t-mobile, comcast, xfinity, internet, mobile, google fi, spectrum]
+
+- category: Utilities
+  keywords: ["pg&e", "pge", water dept, "electric", utility, "sewer", "waste"]
+
+- category: Insurance
+  keywords: [insurance, geico, state farm, allstate, progressive, "lemonade"]
+
+- category: Rent / Mortgage
+  keywords: [rent, apartment, property, mortgage, "leasing", realty]
+
+- category: Debt Payments
+  keywords: [loan, student loan, sofi, navient, "credit card payment", "card pmt"]
+
+- category: Household goods
+  keywords: [target, walmart, ikea, home depot, "lowe", bed bath, container store, "amazon.com", "amzn", wayfair, homegoods]

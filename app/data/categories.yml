@@ -1,0 +1,41 @@
+# Spending taxonomy + Needs/Wants/Savings buckets.
+# Seeded from ~/Documents/Categories.csv plus the extra categories referenced in
+# ~/Documents/Summary.csv (Therapy/Counseling, Medical, Coffee, Gym/Fitness,
+# Alcohol/Bars, Self-Care, Household goods). Bundled here so the server never
+# needs to read the user's home directory.
+
+buckets:
+  Needs:
+    - Rent / Mortgage
+    - Utilities
+    - Groceries
+    - Transportation
+    - Insurance
+    - Debt Payments
+    - Phone & Internet
+    - Therapy / Counseling
+    - Medical
+  Wants:
+    - Dining Out
+    - Entertainment
+    - Subscriptions
+    - Clothing
+    - Household goods
+    - Coffee
+    - Gym / Fitness
+    - Alcohol / Bars
+    - Self-Care
+  Savings:
+    - Emergency Fund
+    - Retirement
+    - Short-term Savings
+
+# Runway / budget model, mirroring ~/Documents/Summary.csv.
+budget:
+  emergency_fund: 20000
+  reserve_months: 3      # reserve = reserve_months * monthly Needs
+  draw_months: 6         # usable cushion is drawn down over this many months
+  split:                 # 50/30/20 target split applied to the safe monthly cap
+    Needs: 0.50
+    Wants: 0.30
+    Savings: 0.20

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spend Report — {{ r.month or "—" }}</title>
+<style>
+  @page { size: Letter; margin: 1.6cm; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #2a3625; font-size: 11px; }
+  h1 { color: #3d5430; margin: 0 0 2px 0; font-size: 22px; }
+  h2 { color: #3d5430; border-bottom: 1px solid #cdd8c1; padding-bottom: 2px; margin: 18px 0 8px; font-size: 14px; }
+  .sub { color: #6b7860; margin: 0 0 12px; }
+  .cards { display: flex; gap: 10px; margin-bottom: 8px; }
+  .card { flex: 1; border: 1px solid #cdd8c1; border-radius: 6px; padding: 8px 10px; background: #fafcf6; }
+  .card .label { color: #6b7860; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 17px; font-weight: 700; color: #3d5430; }
+  .charts { display: flex; gap: 10px; align-items: flex-start; }
+  .charts img { max-width: 100%; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #e6ecd9; }
+  th { background: #e6ecd9; color: #3d5430; }
+  td.num, th.num { text-align: right; }
+  .foot { margin-top: 20px; color: #8a967d; font-size: 9px; }
+</style>
+</head>
+<body>
+  <h1>Spend Lens report</h1>
+  <p class="sub">Month {{ r.month or "—" }} · generated {{ generated_on }} · data never stored</p>
+
+  <div class="cards">
+    <div class="card"><div class="label">Total spend</div><div class="value">${{ "%.2f"|format(r.summary.total_spend) }}</div></div>
+    <div class="card"><div class="label">Transactions</div><div class="value">{{ r.summary.txn_count }}</div></div>
+    <div class="card"><div class="label">Top category</div><div class="value">{{ r.summary.top_category or "—" }}</div></div>
+    <div class="card"><div class="label">Runway</div><div class="value">{% if r.budget.runway_months %}{{ "%.1f"|format(r.budget.runway_months) }} mo{% else %}—{% endif %}</div></div>
+  </div>
+
+  <div class="charts">
+    <img src="{{ charts.bucket }}" alt="bucket">
+    <img src="{{ charts.category }}" alt="category">
+  </div>
+  <img src="{{ charts.trend }}" alt="trend" style="max-width:100%;margin-top:6px;">
+
+  <h2>By category</h2>
+  <table>
+    <tr><th>Category</th><th>Bucket</th><th class="num">Amount</th></tr>
+    {% for c in r.by_category %}
+    <tr><td>{{ c.category }}</td><td>{{ c.bucket }}</td><td class="num">${{ "%.2f"|format(c.amount) }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Budget vs. actual &amp; runway</h2>
+  <table>
+    <tr><th>Bucket</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Diff</th></tr>
+    {% for b, target in r.budget.targets.items() %}
+    <tr><td>{{ b }}</td><td class="num">${{ "%.2f"|format(target) }}</td>
+        <td class="num">${{ "%.2f"|format(r.budget.actual[b]) }}</td>
+        <td class="num">${{ "%.2f"|format(r.budget.diff[b]) }}</td></tr>
+    {% endfor %}
+  </table>
+  <p class="sub" style="margin-top:6px;">
+    Emergency fund ${{ "%.0f"|format(r.budget.emergency_fund) }} ·
+    reserve ${{ "%.0f"|format(r.budget.reserve) }} ·
+    usable cushion ${{ "%.0f"|format(r.budget.usable_cushion) }} ·
+    safe monthly cap ${{ "%.2f"|format(r.budget.safe_monthly_cap) }}
+  </p>
+
+  {% if r.investments.events %}
+  <h2>Investments</h2>
+  <p class="sub">
+    Deposited ${{ "%.2f"|format(r.investments.total_deposited) }} ·
+    invested ${{ "%.2f"|format(r.investments.total_invested) }} ·
+    {{ r.investments.trade_count }} trades
+  </p>
+  {% endif %}
+
+  <p class="foot">Spend Lens · a stateless demo. Figures are computed in-memory from the data you loaded and are not stored anywhere.</p>
+</body>
+</html>

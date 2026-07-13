@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spend Lens — private, stateless spending analyzer</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🌿 Spend Lens</h1>
+    <p class="tag">Categorize your spending, see where it goes, and export a report — all in your browser.</p>
+  </div>
+</header>
+
+<div class="banner wrap">
+  <strong>Your data is never stored.</strong> Everything you load lives only in this browser tab and
+  is analyzed in-memory. Close or refresh the tab and it's gone — nothing is written to a server or database.
+</div>
+
+<main class="wrap">
+  <section class="controls">
+    <button id="btn-demo" class="primary">Load demo data</button>
+    <label class="filebtn">Upload CSV<input type="file" id="file-csv" accept=".csv" hidden></label>
+    <button id="btn-paste">Paste an email</button>
+    <select id="month-select" title="Month"></select>
+    <button id="btn-report">Download PDF report</button>
+    <button id="btn-clear" class="ghost">Clear</button>
+    <span id="status" class="status"></span>
+  </section>
+
+  <section id="paste-panel" class="paste-panel" hidden>
+    <textarea id="paste-text" rows="5" placeholder="Paste a Chase / Venmo / Wealthfront / Fidelity notification email here..."></textarea>
+    <button id="btn-paste-go" class="primary">Parse email</button>
+  </section>
+
+  <section id="empty" class="empty">
+    <p>No data loaded yet. Start with <strong>Load demo data</strong>, upload a transactions or Fidelity CSV,
+    or paste a notification email.</p>
+  </section>
+
+  <section id="dash" hidden>
+    <div class="cards">
+      <div class="card"><div class="label">Total spend</div><div class="value" id="c-total">$0</div></div>
+      <div class="card"><div class="label">Transactions</div><div class="value" id="c-count">0</div></div>
+      <div class="card"><div class="label">Top category</div><div class="value" id="c-top">—</div></div>
+      <div class="card"><div class="label">Runway</div><div class="value" id="c-runway">—</div></div>
+    </div>
+
+    <div class="query">
+      <input id="q-input" placeholder='Ask: how much did I spend on coffee?'>
+      <button id="q-go" class="primary">Ask</button>
+      <span id="q-result" class="q-result"></span>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-box"><canvas id="chart-bucket"></canvas></div>
+      <div class="chart-box"><canvas id="chart-category"></canvas></div>
+      <div class="chart-box wide"><canvas id="chart-trend"></canvas></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3>Budget vs. actual &amp; runway</h3>
+        <table id="budget-table"></table>
+      </div>
+      <div>
+        <h3>Investments</h3>
+        <div id="invest-summary" class="invest"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Stateless demo · rules-based categorization{% if enable_llm %} · Claude fallback enabled (local){% endif %}.
+  A portfolio piece by Jasmine Anica.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

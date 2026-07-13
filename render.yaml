@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: spend-lens
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # Public build is rules-only: no API key, no LLM cost/abuse surface.
+      - key: ENABLE_LLM
+        value: "false"
