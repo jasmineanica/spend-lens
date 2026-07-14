@@ -117,6 +117,11 @@ function renderInvest(inv) {
 }
 
 // --- actions ---
+document.getElementById("btn-start").onclick = () => {
+  document.getElementById("landing").hidden = true;
+  document.getElementById("app-view").hidden = false;
+};
+
 document.getElementById("btn-demo").onclick = async () => {
   setStatus("Loading demo data…");
   const r = await fetch("/api/demo");

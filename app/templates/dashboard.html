@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+<section id="landing" class="landing">
+  <div class="landing-inner">
+    <h1>🌿 Spend Lens</h1>
+    <p class="landing-tag">Categorize your spending, see where it goes, and export a report — all in your browser.</p>
+    <button id="btn-start" class="primary big">Get Started</button>
+  </div>
+</section>
+
+<div id="app-view" hidden>
 <header>
   <div class="wrap">
     <h1>🌿 Spend Lens</h1>
@@ -77,6 +86,7 @@
   <p>Stateless demo · rules-based categorization{% if enable_llm %} · Claude fallback enabled (local){% endif %}.
   A portfolio piece by Jasmine Anica.</p>
 </footer>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/static/app.js"></script>
