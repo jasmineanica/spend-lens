@@ -11,6 +11,7 @@ body { margin: 0; font-family: -apple-system, "Helvetica Neue", Arial, sans-seri
 .landing { min-height: 100vh; display: flex; align-items: center; justify-content: center;
   text-align: center; padding: 24px; border-top: 5px solid var(--green-dark);
   background: linear-gradient(160deg, #fff 0%, var(--bg) 100%); }
+.landing[hidden] { display: none; }  /* beat the .landing display:flex above */
 .landing-inner { max-width: 620px; }
 .landing h1 { color: var(--green-dark); font-size: 3rem; margin: 0 0 12px; }
 .landing-tag { color: #4a553f; font-size: 1.25rem; line-height: 1.5; margin: 0 auto 28px; }
