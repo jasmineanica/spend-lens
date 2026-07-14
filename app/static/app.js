@@ -118,8 +118,10 @@ function renderInvest(inv) {
 
 // --- actions ---
 document.getElementById("btn-start").onclick = () => {
-  document.getElementById("landing").hidden = true;
-  document.getElementById("app-view").hidden = false;
+  const landing = document.getElementById("landing");
+  document.getElementById("app-view").hidden = false; // reveal beneath the overlay
+  landing.classList.add("fade-out");                  // fade the splash out
+  setTimeout(() => { landing.hidden = true; }, 450);  // remove after the transition
 };
 
 document.getElementById("btn-demo").onclick = async () => {
@@ -130,12 +132,13 @@ document.getElementById("btn-demo").onclick = async () => {
 
 document.getElementById("file-csv").onchange = async (e) => {
   const file = e.target.files[0]; if (!file) return;
-  setStatus("Parsing CSV…");
+  const isEml = /\.eml$/i.test(file.name);
+  setStatus(isEml ? "Parsing email file…" : "Parsing CSV…");
   const fd = new FormData(); fd.append("file", file);
-  const r = await fetch("/api/parse/csv", { method: "POST", body: fd });
+  const r = await fetch("/api/parse/upload", { method: "POST", body: fd });
   const ds = await r.json();
   const n = (ds.transactions?.length || 0) + (ds.investments?.length || 0);
-  if (!n) { setStatus("No rows recognized in that CSV."); return; }
+  if (!n) { setStatus(isEml ? "Couldn't find a transaction in that .eml." : "No rows recognized in that CSV."); return; }
   mergeData(ds);
   e.target.value = "";
 };

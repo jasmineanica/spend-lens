@@ -63,3 +63,5 @@ pytest
   Price, Amount).
 - **Pasted email** — Chase purchase alerts, Venmo payments, Wealthfront deposits, and Fidelity
   trade confirmations (plain text or HTML).
+- **`.eml` file** — upload a saved email; its subject, body, and date header are extracted and
+  run through the same email parser.

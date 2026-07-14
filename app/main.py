@@ -11,6 +11,7 @@ from . import analytics, demo
 from .config import APP_DIR, get_settings
 from .parse.csv_import import parse_csv
 from .parse.email_text import parse_email_text
+from .parse.eml_import import parse_eml
 from .report import generate_pdf
 from .schemas import AnalyzeRequest, Dataset, EmailRequest, QueryRequest
 
@@ -32,10 +33,15 @@ def api_demo() -> Dataset:
     return demo.generate()
 
 
-@app.post("/api/parse/csv")
-async def api_parse_csv(file: UploadFile = File(...)) -> Dataset:
-    raw = (await file.read()).decode("utf-8", errors="replace")
-    return parse_csv(file.filename or "upload.csv", raw)
+@app.post("/api/parse/upload")
+async def api_parse_upload(file: UploadFile = File(...)) -> Dataset:
+    """Dispatch an uploaded file by type: .eml -> email parser, else CSV."""
+    raw = await file.read()
+    name = (file.filename or "").lower()
+    ctype = (file.content_type or "").lower()
+    if name.endswith(".eml") or ctype.startswith("message/"):
+        return parse_eml(raw)
+    return parse_csv(file.filename or "upload.csv", raw.decode("utf-8", errors="replace"))
 
 
 @app.post("/api/parse/email")

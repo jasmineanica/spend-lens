@@ -7,7 +7,18 @@ from app.categorize import categorize
 from app.main import app
 from app.parse.csv_import import parse_csv, parse_fidelity_csv, parse_transactions_csv
 from app.parse.email_text import parse_email_text
+from app.parse.eml_import import eml_to_text, parse_eml
 from app.report import generate_pdf
+
+SAMPLE_EML = (
+    b"From: alerts@chase.com\r\n"
+    b"To: jasmine@example.com\r\n"
+    b"Subject: Transaction alert\r\n"
+    b"Date: Fri, 3 Jul 2026 10:00:00 -0700\r\n"
+    b"Content-Type: text/plain; charset=utf-8\r\n"
+    b"\r\n"
+    b"You made a $12.34 transaction with STARBUCKS STORE 123.\r\n"
+)
 
 client = TestClient(app)
 
@@ -90,6 +101,28 @@ def test_parse_venmo_and_investment_email():
     ds2 = parse_email_text("Your deposit of $500.00 was received. You bought 2 shares of VTI at $275.00.")
     kinds = sorted(e.kind for e in ds2.investments)
     assert kinds == ["buy", "deposit"]
+
+
+# --- .eml upload ---
+def test_eml_to_text_and_parse():
+    text = eml_to_text(SAMPLE_EML)
+    assert "STARBUCKS" in text and "Jul 3, 2026" in text  # body + date header
+    ds = parse_eml(SAMPLE_EML)
+    assert len(ds.transactions) == 1
+    t = ds.transactions[0]
+    assert t.amount == 12.34 and t.category == "Coffee" and t.date == "2026-07-03"
+
+
+def test_upload_endpoint_dispatch():
+    # .eml routes to the email parser
+    eml = client.post("/api/parse/upload",
+                      files={"file": ("alert.eml", SAMPLE_EML, "message/rfc822")})
+    assert eml.json()["transactions"][0]["category"] == "Coffee"
+    # .csv still routes to the CSV parser
+    csv = "Date,Description,Amount\n2026-07-01,Trader Joe's,54.20\n"
+    up = client.post("/api/parse/upload",
+                     files={"file": ("txns.csv", csv, "text/csv")})
+    assert up.json()["transactions"][0]["category"] == "Groceries"
 
 
 # --- report ---

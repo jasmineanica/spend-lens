@@ -8,10 +8,15 @@ body { margin: 0; font-family: -apple-system, "Helvetica Neue", Arial, sans-seri
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
 
 /* Landing / splash view */
-.landing { min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  text-align: center; padding: 24px; border-top: 5px solid var(--green-dark);
-  background: linear-gradient(160deg, #fff 0%, var(--bg) 100%); }
+.landing { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center;
+  justify-content: center; text-align: center; padding: 24px;
+  border-top: 5px solid var(--green-dark);
+  background: linear-gradient(160deg, #fff 0%, var(--bg) 100%);
+  opacity: 1; transition: opacity .45s ease; }
+.landing.fade-out { opacity: 0; pointer-events: none; }
 .landing[hidden] { display: none; }  /* beat the .landing display:flex above */
+#app-view { animation: fadein .5s ease both; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 .landing-inner { max-width: 620px; }
 .landing h1 { color: var(--green-dark); font-size: 3rem; margin: 0 0 12px; }
 .landing-tag { color: #4a553f; font-size: 1.25rem; line-height: 1.5; margin: 0 auto 28px; }
