@@ -52,6 +52,10 @@ select { font: inherit; padding: 7px 10px; border: 1px solid var(--border); bord
 @keyframes indet { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
 .progress-label { color: var(--green-dark); font-size: .85rem; white-space: nowrap; }
 
+.stash-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px;
+  padding-top: 12px; border-top: 1px dashed var(--border); }
+.stash-actions .hint { color: #6b7860; font-size: .9rem; }
+
 .dash-header { display: flex; justify-content: space-between; align-items: center;
   gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
 .month-nav { display: flex; align-items: center; gap: 6px; }

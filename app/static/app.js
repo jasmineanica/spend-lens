@@ -1,33 +1,50 @@
 "use strict";
 
-const KEY = "spendlens.dataset";
+// State is in-memory only, so a page refresh wipes everything. `stash` keeps a
+// copy of the user's imported data for this session so they can Clear (e.g. to
+// peek at the demo) and later Reload their own data.
 const charts = {};
-let dataset = load();
+let dataset = blank();
+let stash = null;
+let viewingDemo = false;
 let currentMonth = null;
 let months = [];
 
-function load() {
-  try { return JSON.parse(sessionStorage.getItem(KEY)) || blank(); }
-  catch { return blank(); }
-}
 function blank() { return { transactions: [], investments: [] }; }
-function save() { sessionStorage.setItem(KEY, JSON.stringify(dataset)); }
-function hasData() { return dataset.transactions.length || dataset.investments.length; }
-
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function has(ds) { return !!(ds && (ds.transactions.length || ds.investments.length)); }
+function hasData() { return has(dataset); }
+function scrollDash() {
+  if (hasData()) document.getElementById("dash").scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function setStatus(msg) { document.getElementById("status").textContent = msg || ""; }
 
-async function mergeData(ds, { replace = false } = {}) {
-  if (replace) dataset = blank();
+async function loadDemo(ds) {
+  dataset = ds;            // demo replaces the current view (kept separate from imports)
+  viewingDemo = true;
+  currentMonth = null;
+  await refresh();
+  scrollDash();
+}
+
+async function importData(ds) {
+  if (viewingDemo) { dataset = blank(); viewingDemo = false; }  // don't mix demo with imports
   dataset.transactions.push(...(ds.transactions || []));
   dataset.investments.push(...(ds.investments || []));
-  save();
-  currentMonth = null; // let analyze pick the latest
+  if (!stash) stash = blank();
+  stash.transactions.push(...(ds.transactions || []));
+  stash.investments.push(...(ds.investments || []));
+  currentMonth = null;
   await refresh();
-  // Auto-reveal the populated results after an import.
-  document.getElementById("dash").scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollDash();
+}
+
+function updateStashUI() {
+  document.getElementById("stash-actions").hidden = !has(stash);
 }
 
 async function refresh() {
+  updateStashUI();
   document.getElementById("empty").hidden = hasData();
   document.getElementById("dash").hidden = !hasData();
   if (!hasData()) { setStatus(""); return; }
@@ -145,7 +162,20 @@ document.getElementById("btn-start").onclick = () => {
 document.getElementById("btn-demo").onclick = async () => {
   setStatus("Loading demo data…");
   const r = await fetch("/api/demo");
-  mergeData(await r.json(), { replace: true });
+  await loadDemo(await r.json());
+};
+
+document.getElementById("btn-reload").onclick = async () => {
+  if (!has(stash)) return;
+  dataset = clone(stash); viewingDemo = false; currentMonth = null;
+  await refresh(); scrollDash();
+};
+
+document.getElementById("btn-clear-import").onclick = () => {
+  stash = null;
+  if (!viewingDemo) { dataset = blank(); currentMonth = null; }
+  document.getElementById("q-result").textContent = "";
+  refresh();
 };
 
 const progressWrap = document.getElementById("progress-wrap");
@@ -219,7 +249,7 @@ document.getElementById("file-csv").onchange = async (e) => {
     if (!n) {
       setStatus(isEmail ? "No transactions found in that email file." : "No rows recognized in that CSV.");
     } else {
-      mergeData(ds);
+      await importData(ds);
     }
   } catch (err) {
     hideProgress();
@@ -239,7 +269,7 @@ document.getElementById("btn-paste-go").onclick = async () => {
   const n = (ds.transactions?.length || 0) + (ds.investments?.length || 0);
   if (!n) { setStatus("Couldn't find a transaction in that text."); return; }
   document.getElementById("paste-text").value = "";
-  mergeData(ds);
+  await importData(ds);
 };
 
 document.getElementById("month-select").onchange = (e) => {
@@ -276,9 +306,9 @@ document.getElementById("btn-report").onclick = async () => {
 };
 
 document.getElementById("btn-clear").onclick = () => {
-  dataset = blank(); currentMonth = null; sessionStorage.removeItem(KEY);
+  dataset = blank(); viewingDemo = false; currentMonth = null;
   document.getElementById("q-result").textContent = "";
-  refresh();
+  refresh();  // stash is kept so "Reload my data" stays available
 };
 
 refresh();

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
 
     enable_llm: bool = False
     anthropic_api_key: str = ""
+    # Keyless Wikidata lookup for unknown merchants — safe to run on the public
+    # deploy (no key, only the merchant string is sent). Set ENABLE_ENRICH=false to disable.
+    enable_enrich: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

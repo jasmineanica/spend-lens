@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import io
+import time
 from datetime import date
 from typing import Optional
 
@@ -63,7 +64,22 @@ def _trend_chart(monthly: list[dict]) -> str:
     return _fig_to_data_uri(fig)
 
 
+def _fmt_duration(seconds: float) -> str:
+    if seconds < 1:
+        return f"{seconds * 1000:.0f} ms"
+    if seconds < 60:
+        return f"{seconds:.1f} seconds"
+    minutes, secs = divmod(seconds, 60)
+    return f"{int(minutes)} min {secs:.0f} sec"
+
+
+# Placeholder swapped for the real elapsed time after rendering but before the
+# (fast) PDF serialization, so the report can state its own build time.
+_GEN_TOKEN = "__GEN_SECS__"
+
+
 def generate_pdf(dataset: Dataset, month: Optional[str] = None) -> bytes:
+    t0 = time.monotonic()
     overall = analyze(dataset, None)
     months = overall["months"]
 
@@ -101,6 +117,7 @@ def generate_pdf(dataset: Dataset, month: Optional[str] = None) -> bytes:
         }
 
     html = _env.get_template("report.html").render(
-        generated_on=date.today().isoformat(), **ctx,
+        generated_on=date.today().isoformat(), gen_time=_GEN_TOKEN, **ctx,
     )
+    html = html.replace(_GEN_TOKEN, _fmt_duration(time.monotonic() - t0))
     return HTML(string=html, base_url=str(_TEMPLATES)).write_pdf()

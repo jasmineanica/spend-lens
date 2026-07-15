@@ -17,8 +17,10 @@ Close or refresh the tab and it's gone.
 - The **browser** holds the working dataset in `sessionStorage`; charts render with
   **Chart.js**.
 - **Categorization** = an ordered merchant→category rules map (`app/data/merchant_rules.yml`)
-  over a taxonomy of Needs/Wants/Savings categories (`app/data/categories.yml`). An optional
-  **Claude** fallback categorizes unknown merchants — enabled only when you run locally.
+  over a taxonomy of Needs/Wants/Savings categories (`app/data/categories.yml`). Unknown
+  merchants fall through to a **keyless Wikidata** lookup (`ENABLE_ENRICH`, safe on the public
+  deploy — only the merchant string is sent), and then to an optional **Claude** fallback
+  (`ENABLE_LLM`, local only). Chain: rules → Wikidata → Claude → Uncategorized.
 - **PDF reports** are rendered with matplotlib → Jinja2 → WeasyPrint and streamed back in
   memory (never saved).
 

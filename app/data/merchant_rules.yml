@@ -4,19 +4,19 @@
 # "uber eats" -> Dining Out before "uber" -> Transportation).
 
 - category: Coffee
-  keywords: [starbucks, "peet", philz, blue bottle, dunkin, coffee, "cafe", "café", espresso, caribou]
+  keywords: [starbucks, "peet", philz, blue bottle, dunkin, coffee, "cafe", "café", espresso, caribou, coffeehouse]
 
 - category: Subscriptions
-  keywords: [netflix, spotify, hulu, disney+, disneyplus, youtube premium, "apple.com/bill", "apple.com", adobe, notion, "github", openai, chatgpt, icloud, amazon prime, prime video, dropbox, patreon, medium, nyt, new york times]
+  keywords: [netflix, spotify, hulu, disney+, disneyplus, youtube premium, "apple.com/bill", "apple.com", adobe, notion, "github", openai, chatgpt, icloud, amazon prime, prime video, dropbox, patreon, medium, nyt, new york times, streaming service, streaming platform, software company]
 
 - category: Gym / Fitness
-  keywords: [equinox, planet fitness, crossfit, peloton, classpass, "yoga", pilates, gym, fitness]
+  keywords: [equinox, planet fitness, crossfit, peloton, classpass, "yoga", pilates, gym, fitness, health club]
 
 - category: Therapy / Counseling
   keywords: [therapy, counseling, betterhelp, talkspace, "psycholog", therapist]
 
 - category: Medical
-  keywords: [pharmacy, cvs, walgreens, clinic, hospital, dental, dentist, kaiser, "one medical", doctor, "medical"]
+  keywords: [pharmacy, cvs, walgreens, clinic, hospital, dental, dentist, kaiser, "one medical", doctor, "medical", drugstore]
 
 - category: Self-Care
   keywords: [salon, "spa", nail, barber, haircut, sephora, ulta, aesthetic, waxing]
@@ -28,19 +28,19 @@
   keywords: [doordash, uber eats, ubereats, grubhub, postmates, chipotle, mcdonald, restaurant, pizza, sushi, taco, thai, ramen, kitchen, grill, diner, bistro, "eatery", panera, sweetgreen, shake shack, "in-n-out", chick-fil-a]
 
 - category: Groceries
-  keywords: [safeway, trader joe, whole foods, costco, grocery, "market", aldi, kroger, wegmans, sprouts, ralphs, "food"]
+  keywords: [safeway, trader joe, whole foods, costco, grocery, "market", aldi, kroger, wegmans, sprouts, ralphs, "food", supermarket]
 
 - category: Transportation
-  keywords: [uber, lyft, "bart", chevron, shell, exxon, mobil, "76 ", gas station, parking, clipper, "muni", caltrain, "toll", fastrak]
+  keywords: [uber, lyft, "bart", chevron, shell, exxon, mobil, "76 ", gas station, parking, clipper, "muni", caltrain, "toll", fastrak, ride-hailing, ridesharing, airline]
 
 - category: Entertainment
-  keywords: [amc, cinemark, regal, movie, ticketmaster, steam, playstation, xbox, nintendo, concert, "theater", theatre, live nation]
+  keywords: [amc, cinemark, regal, movie, ticketmaster, steam, playstation, xbox, nintendo, concert, "theater", theatre, live nation, cinema, video game]
 
 - category: Clothing
-  keywords: [nike, zara, h&m, uniqlo, nordstrom, "gap", old navy, lululemon, "clothing", madewell, urban outfitters, adidas]
+  keywords: [nike, zara, h&m, uniqlo, nordstrom, "gap", old navy, lululemon, "clothing", madewell, urban outfitters, adidas, apparel, fashion]
 
 - category: Phone & Internet
-  keywords: [verizon, at&t, t-mobile, comcast, xfinity, internet, mobile, google fi, spectrum]
+  keywords: [verizon, at&t, t-mobile, comcast, xfinity, internet, mobile, google fi, spectrum, telecommunications, wireless carrier]
 
 - category: Utilities
   keywords: ["pg&e", "pge", water dept, "electric", utility, "sewer", "waste"]
@@ -55,4 +55,4 @@
   keywords: [loan, student loan, sofi, navient, "credit card payment", "card pmt"]
 
 - category: Household goods
-  keywords: [target, walmart, ikea, home depot, "lowe", bed bath, container store, "amazon.com", "amzn", wayfair, homegoods]
+  keywords: [target, walmart, ikea, home depot, "lowe", bed bath, container store, "amazon.com", "amzn", wayfair, homegoods, department store, retail chain, hypermarket, e-commerce]

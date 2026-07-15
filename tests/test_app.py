@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
+
+# Disable the network-backed Wikidata enrichment during tests (must be set
+# before app modules read settings).
+os.environ["ENABLE_ENRICH"] = "false"
 
 from fastapi.testclient import TestClient
 
 from app import analytics, demo
+from app import enrich
 from app.categorize import categorize
 from app.main import app
 from app.parse.csv_import import parse_csv, parse_fidelity_csv, parse_transactions_csv
@@ -41,6 +47,20 @@ def test_rules_categorize():
 def test_bucket_mapping():
     assert categorize("Blue Bottle Coffee")[1] == "Wants"
     assert categorize("PG&E")[1] == "Needs"
+
+
+# --- enrichment (no network) ---
+def test_enrich_helpers():
+    assert enrich._clean_merchant("SQ *BLUE BOTTLE OAK 123").lower().startswith("blue bottle")
+    assert enrich._is_personish("Venmo - Miguel") is True
+    # Wikidata-style descriptions map to categories via the rules engine.
+    assert enrich._category_from_text("starbucks american coffeehouse chain") == "Coffee"
+    assert enrich._category_from_text("netflix streaming service") == "Subscriptions"
+
+
+def test_enrich_disabled_returns_none():
+    # ENABLE_ENRICH=false in tests -> no network call, always None.
+    assert enrich.enrich_category("Totally Unknown Merchant Ltd") is None
 
 
 # --- demo + analytics ---

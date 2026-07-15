@@ -80,8 +80,11 @@ def _match_llm(merchant: str, description: str) -> str | None:
 
 
 def categorize(merchant: str, description: str = "") -> tuple[str, str]:
-    """Return (category, bucket). Rules first, then optional local LLM fallback."""
+    """Return (category, bucket): rules -> Wikidata enrichment -> local LLM."""
     category = _match_rules(merchant, description)
+    if category is None:
+        from . import enrich  # lazy import to avoid an import cycle
+        category = enrich.enrich_category(merchant)
     if category is None:
         category = _match_llm(merchant, description)
     if category is None:
