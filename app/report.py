@@ -26,7 +26,7 @@ _env = Environment(
 
 def _fig_to_data_uri(fig) -> str:
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight")
+    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight")
     plt.close(fig)
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
@@ -64,13 +64,43 @@ def _trend_chart(monthly: list[dict]) -> str:
 
 
 def generate_pdf(dataset: Dataset, month: Optional[str] = None) -> bytes:
-    result = analyze(dataset, month)
-    charts = {
-        "bucket": _bucket_chart(result["by_bucket"]),
-        "category": _category_chart(result["by_category"]),
-        "trend": _trend_chart(result["monthly"]),
-    }
+    overall = analyze(dataset, None)
+    months = overall["months"]
+
+    if len(months) <= 1:
+        # Single-month report (or empty): keep the compact one-page layout.
+        result = analyze(dataset, month) if month else overall
+        ctx = {
+            "multi": False,
+            "r": result,
+            "charts": {
+                "bucket": _bucket_chart(result["by_bucket"]),
+                "category": _category_chart(result["by_category"]),
+                "trend": _trend_chart(result["monthly"]),
+            },
+        }
+    else:
+        # Multi-month: overview + a per-month breakdown.
+        months_data = [analyze(dataset, m) for m in months]
+        charts_by_month = {
+            md["month"]: {
+                "bucket": _bucket_chart(md["by_bucket"]),
+                "category": _category_chart(md["by_category"]),
+            }
+            for md in months_data
+        }
+        grand_total = round(sum(md["summary"]["total_spend"] for md in months_data), 2)
+        ctx = {
+            "multi": True,
+            "overall": overall,
+            "months_data": months_data,
+            "charts_by_month": charts_by_month,
+            "trend_chart": _trend_chart(overall["monthly"]),
+            "grand_total": grand_total,
+            "avg_month": round(grand_total / len(months), 2),
+        }
+
     html = _env.get_template("report.html").render(
-        r=result, charts=charts, generated_on=date.today().isoformat(),
+        generated_on=date.today().isoformat(), **ctx,
     )
     return HTML(string=html, base_url=str(_TEMPLATES)).write_pdf()

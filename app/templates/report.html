@@ -2,28 +2,88 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Spend Report — {{ r.month or "—" }}</title>
+<title>Spend Lens report</title>
 <style>
-  @page { size: Letter; margin: 1.6cm; }
+  @page { size: Letter; margin: 1.4cm; }
   body { font-family: "Helvetica Neue", Arial, sans-serif; color: #2a3625; font-size: 11px; }
   h1 { color: #3d5430; margin: 0 0 2px 0; font-size: 22px; }
-  h2 { color: #3d5430; border-bottom: 1px solid #cdd8c1; padding-bottom: 2px; margin: 18px 0 8px; font-size: 14px; }
+  h2 { color: #3d5430; border-bottom: 1px solid #cdd8c1; padding-bottom: 2px;
+       margin: 16px 0 8px; font-size: 14px; }
   .sub { color: #6b7860; margin: 0 0 12px; }
-  .cards { display: flex; gap: 10px; margin-bottom: 8px; }
-  .card { flex: 1; border: 1px solid #cdd8c1; border-radius: 6px; padding: 8px 10px; background: #fafcf6; }
-  .card .label { color: #6b7860; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
-  .card .value { font-size: 17px; font-weight: 700; color: #3d5430; }
-  .charts { display: flex; gap: 10px; align-items: flex-start; }
-  .charts img { max-width: 100%; }
+
+  .cards { display: flex; gap: 8px; margin: 6px 0 10px; }
+  .card { flex: 1; border: 1px solid #cdd8c1; border-radius: 6px; padding: 7px 9px; background: #fafcf6; }
+  .card .label { color: #6b7860; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 15px; font-weight: 700; color: #3d5430; }
+
+  /* Charts are constrained to the page width so they never overflow/clip. */
+  .chart-pair { display: flex; gap: 12px; align-items: flex-start; margin: 6px 0; }
+  .chart-pair img { width: 48%; height: auto; }
+  img.trend { display: block; width: 85%; height: auto; margin: 6px 0; }
+
   table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #e6ecd9; }
+  th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid #e6ecd9; }
   th { background: #e6ecd9; color: #3d5430; }
   td.num, th.num { text-align: right; }
-  .foot { margin-top: 20px; color: #8a967d; font-size: 9px; }
+
+  .month-block { page-break-inside: avoid; margin-top: 16px; }
+  .foot { margin-top: 18px; color: #8a967d; font-size: 9px; }
 </style>
 </head>
 <body>
   <h1>Spend Lens report</h1>
+
+{% if multi %}
+  <p class="sub">{{ overall.months|length }} months ({{ overall.months[0] }} – {{ overall.months[-1] }})
+    · generated {{ generated_on }} · data never stored</p>
+
+  <div class="cards">
+    <div class="card"><div class="label">Total spend</div><div class="value">${{ "%.2f"|format(grand_total) }}</div></div>
+    <div class="card"><div class="label">Months</div><div class="value">{{ overall.months|length }}</div></div>
+    <div class="card"><div class="label">Avg / month</div><div class="value">${{ "%.2f"|format(avg_month) }}</div></div>
+    <div class="card"><div class="label">Top category</div><div class="value">{{ overall.summary.top_category or "—" }}</div></div>
+  </div>
+
+  <img class="trend" src="{{ trend_chart }}" alt="monthly trend">
+
+  <h2>Monthly totals</h2>
+  <table>
+    <tr><th>Month</th><th class="num">Total spend</th></tr>
+    {% for m in overall.monthly %}
+    <tr><td>{{ m.month }}</td><td class="num">${{ "%.2f"|format(m.total) }}</td></tr>
+    {% endfor %}
+  </table>
+
+  {% for md in months_data %}
+  <div class="month-block">
+    <h2>{{ md.month }}</h2>
+    <div class="cards">
+      <div class="card"><div class="label">Spend</div><div class="value">${{ "%.2f"|format(md.summary.total_spend) }}</div></div>
+      <div class="card"><div class="label">Transactions</div><div class="value">{{ md.summary.txn_count }}</div></div>
+      <div class="card"><div class="label">Top category</div><div class="value">{{ md.summary.top_category or "—" }}</div></div>
+      <div class="card"><div class="label">Runway</div><div class="value">{% if md.budget.runway_months %}{{ "%.1f"|format(md.budget.runway_months) }} mo{% else %}—{% endif %}</div></div>
+    </div>
+    <div class="chart-pair">
+      <img src="{{ charts_by_month[md.month].bucket }}" alt="buckets">
+      <img src="{{ charts_by_month[md.month].category }}" alt="categories">
+    </div>
+    <table>
+      <tr><th>Category</th><th>Bucket</th><th class="num">Amount</th></tr>
+      {% for c in md.by_category %}
+      <tr><td>{{ c.category }}</td><td>{{ c.bucket }}</td><td class="num">${{ "%.2f"|format(c.amount) }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endfor %}
+
+  {% if overall.investments.events %}
+  <h2>Investments (all months)</h2>
+  <p class="sub">Deposited ${{ "%.2f"|format(overall.investments.total_deposited) }} ·
+    invested ${{ "%.2f"|format(overall.investments.total_invested) }} ·
+    {{ overall.investments.trade_count }} trades</p>
+  {% endif %}
+
+{% else %}
   <p class="sub">Month {{ r.month or "—" }} · generated {{ generated_on }} · data never stored</p>
 
   <div class="cards">
@@ -33,11 +93,11 @@
     <div class="card"><div class="label">Runway</div><div class="value">{% if r.budget.runway_months %}{{ "%.1f"|format(r.budget.runway_months) }} mo{% else %}—{% endif %}</div></div>
   </div>
 
-  <div class="charts">
-    <img src="{{ charts.bucket }}" alt="bucket">
-    <img src="{{ charts.category }}" alt="category">
+  <div class="chart-pair">
+    <img src="{{ charts.bucket }}" alt="buckets">
+    <img src="{{ charts.category }}" alt="categories">
   </div>
-  <img src="{{ charts.trend }}" alt="trend" style="max-width:100%;margin-top:6px;">
+  <img class="trend" src="{{ charts.trend }}" alt="trend">
 
   <h2>By category</h2>
   <table>
@@ -65,12 +125,11 @@
 
   {% if r.investments.events %}
   <h2>Investments</h2>
-  <p class="sub">
-    Deposited ${{ "%.2f"|format(r.investments.total_deposited) }} ·
+  <p class="sub">Deposited ${{ "%.2f"|format(r.investments.total_deposited) }} ·
     invested ${{ "%.2f"|format(r.investments.total_invested) }} ·
-    {{ r.investments.trade_count }} trades
-  </p>
+    {{ r.investments.trade_count }} trades</p>
   {% endif %}
+{% endif %}
 
   <p class="foot">Spend Lens · a stateless demo. Figures are computed in-memory from the data you loaded and are not stored anywhere.</p>
 </body>

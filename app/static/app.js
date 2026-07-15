@@ -4,6 +4,7 @@ const KEY = "spendlens.dataset";
 const charts = {};
 let dataset = load();
 let currentMonth = null;
+let months = [];
 
 function load() {
   try { return JSON.parse(sessionStorage.getItem(KEY)) || blank(); }
@@ -15,13 +16,15 @@ function hasData() { return dataset.transactions.length || dataset.investments.l
 
 function setStatus(msg) { document.getElementById("status").textContent = msg || ""; }
 
-function mergeData(ds, { replace = false } = {}) {
+async function mergeData(ds, { replace = false } = {}) {
   if (replace) dataset = blank();
   dataset.transactions.push(...(ds.transactions || []));
   dataset.investments.push(...(ds.investments || []));
   save();
   currentMonth = null; // let analyze pick the latest
-  refresh();
+  await refresh();
+  // Auto-reveal the populated results after an import.
+  document.getElementById("dash").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function refresh() {
@@ -43,7 +46,8 @@ async function refresh() {
   renderInvest(r.investments);
 }
 
-function populateMonths(months, selected) {
+function populateMonths(monthList, selected) {
+  months = monthList || [];
   const sel = document.getElementById("month-select");
   sel.innerHTML = "";
   months.forEach((m) => {
@@ -51,6 +55,20 @@ function populateMonths(months, selected) {
     o.value = m; o.textContent = m; if (m === selected) o.selected = true;
     sel.appendChild(o);
   });
+  updateMonthNav();
+}
+
+function updateMonthNav() {
+  const i = months.indexOf(currentMonth);
+  document.getElementById("btn-prev-month").disabled = i <= 0;
+  document.getElementById("btn-next-month").disabled = i < 0 || i >= months.length - 1;
+}
+
+function stepMonth(delta) {
+  const j = months.indexOf(currentMonth) + delta;
+  if (j < 0 || j >= months.length) return;
+  currentMonth = months[j];
+  refresh();
 }
 
 function money(v) { return "$" + Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -227,6 +245,8 @@ document.getElementById("btn-paste-go").onclick = async () => {
 document.getElementById("month-select").onchange = (e) => {
   currentMonth = e.target.value; refresh();
 };
+document.getElementById("btn-prev-month").onclick = () => stepMonth(-1);
+document.getElementById("btn-next-month").onclick = () => stepMonth(1);
 
 document.getElementById("q-go").onclick = doQuery;
 document.getElementById("q-input").addEventListener("keydown", (e) => { if (e.key === "Enter") doQuery(); });

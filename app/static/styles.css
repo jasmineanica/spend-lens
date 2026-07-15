@@ -54,7 +54,10 @@ select { font: inherit; padding: 7px 10px; border: 1px solid var(--border); bord
 
 .dash-header { display: flex; justify-content: space-between; align-items: center;
   gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
+.month-nav { display: flex; align-items: center; gap: 6px; }
 .month-pick { color: #6b7860; }
+.nav-arrow { padding: 6px 11px; line-height: 1; }
+button:disabled { opacity: .4; cursor: default; filter: none; }
 
 .paste-section { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
   background: var(--card); margin-bottom: 16px; }

@@ -216,9 +216,31 @@ def test_reconcile_unmatched_still_reduces_total():
 
 # --- report ---
 def test_generate_pdf_bytes():
-    ds = demo.generate()
+    ds = demo.generate()  # spans ~3 months -> multi-month report path
     pdf = generate_pdf(ds)
     assert isinstance(pdf, bytes) and pdf[:4] == b"%PDF"
+
+
+def test_single_month_report():
+    ds = Dataset(transactions=[
+        Transaction(date="2026-07-10", source="chase", merchant="Starbucks",
+                    amount=5.0, category="Coffee", bucket="Wants"),
+    ])
+    pdf = generate_pdf(ds, "2026-07")
+    assert pdf[:4] == b"%PDF"
+
+
+def test_multi_month_report():
+    ds = Dataset(transactions=[
+        Transaction(date="2026-05-10", source="chase", merchant="Safeway",
+                    amount=40.0, category="Groceries", bucket="Needs"),
+        Transaction(date="2026-06-10", source="chase", merchant="Starbucks",
+                    amount=5.0, category="Coffee", bucket="Wants"),
+        Transaction(date="2026-07-10", source="chase", merchant="Uber",
+                    amount=15.0, category="Transportation", bucket="Needs"),
+    ])
+    pdf = generate_pdf(ds)
+    assert pdf[:4] == b"%PDF" and len(pdf) > 1000
 
 
 # --- endpoints ---

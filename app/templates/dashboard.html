@@ -62,7 +62,11 @@
 
   <section id="dash" hidden>
     <div class="dash-header">
-      <label class="month-pick">Month <select id="month-select" title="Month"></select></label>
+      <div class="month-nav">
+        <button id="btn-prev-month" class="nav-arrow" title="Previous month" aria-label="Previous month">◀</button>
+        <label class="month-pick">Month <select id="month-select" title="Month"></select></label>
+        <button id="btn-next-month" class="nav-arrow" title="Next month" aria-label="Next month">▶</button>
+      </div>
       <button id="btn-report" class="primary">Download PDF report</button>
     </div>
     <div class="cards">
