@@ -293,16 +293,30 @@ async function doQuery() {
 
 document.getElementById("btn-report").onclick = async () => {
   if (!hasData()) return;
+  const btn = document.getElementById("btn-report");
+  btn.disabled = true;
   setStatus("Building PDF…");
-  const r = await fetch("/api/report", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dataset, month: currentMonth }) });
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `spend-report-${currentMonth || "latest"}.pdf`;
-  a.click(); URL.revokeObjectURL(url);
-  setStatus("Report downloaded.");
+  try {
+    const r = await fetch("/api/report", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset, month: currentMonth }) });
+    if (!r.ok) { setStatus(`Report failed (${r.status}).`); return; }
+    const blob = await r.blob();
+    if (blob.type && blob.type.indexOf("pdf") === -1) { setStatus("Report failed to render."); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `spend-lens-report.pdf`;
+    document.body.appendChild(a);          // some browsers require the anchor in the DOM
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);  // revoke later so the download isn't canceled
+    setStatus("Report downloaded.");
+  } catch (err) {
+    setStatus("Report error: " + err.message);
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 document.getElementById("btn-clear").onclick = () => {

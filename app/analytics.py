@@ -27,8 +27,9 @@ def _round(v: float) -> float:
     return round(float(v), 2)
 
 
-def analyze(dataset: Dataset, month: Optional[str] = None) -> dict:
-    dataset = reconcile(dataset)
+def analyze(dataset: Dataset, month: Optional[str] = None, reconcile_first: bool = True) -> dict:
+    if reconcile_first:
+        dataset = reconcile(dataset)
     df = _txn_frame(dataset)
 
     if df.empty:

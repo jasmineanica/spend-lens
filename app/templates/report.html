@@ -45,6 +45,9 @@
   </div>
 
   <img class="trend" src="{{ trend_chart }}" alt="monthly trend">
+  {% if charts_omitted %}
+  <p class="sub">Per-month charts are omitted for readability across many months; see the monthly totals and per-month tables below.</p>
+  {% endif %}
 
   <h2>Monthly totals</h2>
   <table>
@@ -63,10 +66,12 @@
       <div class="card"><div class="label">Top category</div><div class="value">{{ md.summary.top_category or "—" }}</div></div>
       <div class="card"><div class="label">Runway</div><div class="value">{% if md.budget.runway_months %}{{ "%.1f"|format(md.budget.runway_months) }} mo{% else %}—{% endif %}</div></div>
     </div>
+    {% if charts_by_month.get(md.month) %}
     <div class="chart-pair">
       <img src="{{ charts_by_month[md.month].bucket }}" alt="buckets">
       <img src="{{ charts_by_month[md.month].category }}" alt="categories">
     </div>
+    {% endif %}
     <table>
       <tr><th>Category</th><th>Bucket</th><th class="num">Amount</th></tr>
       {% for c in md.by_category %}

@@ -14,6 +14,7 @@ from weasyprint import HTML  # noqa: E402
 
 from .analytics import analyze  # noqa: E402
 from .config import APP_DIR  # noqa: E402
+from .reconcile import reconcile  # noqa: E402
 from .schemas import Dataset  # noqa: E402
 
 _GREEN = ["#5f7a4f", "#889d7b", "#b6c7a6", "#3d5430", "#cdd8c1", "#7a8f66"]
@@ -78,14 +79,20 @@ def _fmt_duration(seconds: float) -> str:
 _GEN_TOKEN = "__GEN_SECS__"
 
 
+# Above this many months, per-month charts are skipped (tables kept) to keep the
+# PDF fast and light; the overview trend chart still shows the full time series.
+_MAX_CHART_MONTHS = 12
+
+
 def generate_pdf(dataset: Dataset, month: Optional[str] = None) -> bytes:
     t0 = time.monotonic()
-    overall = analyze(dataset, None)
+    dataset = reconcile(dataset)  # reconcile ONCE, then reuse for every month
+    overall = analyze(dataset, None, reconcile_first=False)
     months = overall["months"]
 
     if len(months) <= 1:
         # Single-month report (or empty): keep the compact one-page layout.
-        result = analyze(dataset, month) if month else overall
+        result = analyze(dataset, month, reconcile_first=False) if month else overall
         ctx = {
             "multi": False,
             "r": result,
@@ -97,20 +104,22 @@ def generate_pdf(dataset: Dataset, month: Optional[str] = None) -> bytes:
         }
     else:
         # Multi-month: overview + a per-month breakdown.
-        months_data = [analyze(dataset, m) for m in months]
+        months_data = [analyze(dataset, m, reconcile_first=False) for m in months]
+        show_charts = len(months) <= _MAX_CHART_MONTHS
         charts_by_month = {
             md["month"]: {
                 "bucket": _bucket_chart(md["by_bucket"]),
                 "category": _category_chart(md["by_category"]),
             }
             for md in months_data
-        }
+        } if show_charts else {}
         grand_total = round(sum(md["summary"]["total_spend"] for md in months_data), 2)
         ctx = {
             "multi": True,
             "overall": overall,
             "months_data": months_data,
             "charts_by_month": charts_by_month,
+            "charts_omitted": not show_charts,
             "trend_chart": _trend_chart(overall["monthly"]),
             "grand_total": grand_total,
             "avg_month": round(grand_total / len(months), 2),
