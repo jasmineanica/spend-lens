@@ -16,10 +16,11 @@
   .card .label { color: #6b7860; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
   .card .value { font-size: 15px; font-weight: 700; color: #3d5430; }
 
-  /* Charts are constrained to the page width so they never overflow/clip. */
+  /* Charts are inline SVG, constrained to page width so they never overflow. */
   .chart-pair { display: flex; gap: 12px; align-items: flex-start; margin: 6px 0; }
-  .chart-pair img { width: 48%; height: auto; }
-  img.trend { display: block; width: 85%; height: auto; margin: 6px 0; }
+  .chart-pair > div { width: 48%; }
+  .trend { width: 85%; margin: 6px 0; }
+  svg { display: block; }
 
   table { width: 100%; border-collapse: collapse; margin-top: 4px; }
   th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid #e6ecd9; }
@@ -44,7 +45,7 @@
     <div class="card"><div class="label">Top category</div><div class="value">{{ overall.summary.top_category or "—" }}</div></div>
   </div>
 
-  <img class="trend" src="{{ trend_chart }}" alt="monthly trend">
+  <div class="trend">{{ trend_chart|safe }}</div>
   {% if charts_omitted %}
   <p class="sub">Per-month charts are omitted for readability across many months; see the monthly totals and per-month tables below.</p>
   {% endif %}
@@ -68,8 +69,8 @@
     </div>
     {% if charts_by_month.get(md.month) %}
     <div class="chart-pair">
-      <img src="{{ charts_by_month[md.month].bucket }}" alt="buckets">
-      <img src="{{ charts_by_month[md.month].category }}" alt="categories">
+      <div>{{ charts_by_month[md.month].bucket|safe }}</div>
+      <div>{{ charts_by_month[md.month].category|safe }}</div>
     </div>
     {% endif %}
     <table>
@@ -99,10 +100,10 @@
   </div>
 
   <div class="chart-pair">
-    <img src="{{ charts.bucket }}" alt="buckets">
-    <img src="{{ charts.category }}" alt="categories">
+    <div>{{ charts.bucket|safe }}</div>
+    <div>{{ charts.category|safe }}</div>
   </div>
-  <img class="trend" src="{{ charts.trend }}" alt="trend">
+  <div class="trend">{{ charts.trend|safe }}</div>
 
   <h2>By category</h2>
   <table>
