@@ -31,12 +31,21 @@
 <main class="wrap">
   <section class="controls">
     <button id="btn-demo" class="primary">Load demo data</button>
-    <label class="filebtn">Upload CSV / .eml / .mbox<input type="file" id="file-csv" accept=".csv,.eml,.mbox,message/rfc822" hidden></label>
     <button id="btn-paste">Paste an email</button>
-    <select id="month-select" title="Month"></select>
-    <button id="btn-report">Download PDF report</button>
     <button id="btn-clear" class="ghost">Clear</button>
     <span id="status" class="status"></span>
+  </section>
+
+  <section class="upload-section">
+    <h3>Import a file</h3>
+    <div class="upload-row">
+      <label class="filebtn">Upload CSV / .eml / .mbox<input type="file" id="file-csv" accept=".csv,.eml,.mbox,message/rfc822" hidden></label>
+      <span class="hint">A transactions <code>.csv</code>, a saved <code>.eml</code>, or an <code>.mbox</code> export (e.g. a Google Takeout of a bank-alerts label).</span>
+    </div>
+    <div id="progress-wrap" class="progress-wrap" hidden>
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      <span id="progress-label" class="progress-label"></span>
+    </div>
   </section>
 
   <section id="paste-panel" class="paste-panel" hidden>
@@ -50,6 +59,10 @@
   </section>
 
   <section id="dash" hidden>
+    <div class="dash-header">
+      <label class="month-pick">Month <select id="month-select" title="Month"></select></label>
+      <button id="btn-report" class="primary">Download PDF report</button>
+    </div>
     <div class="cards">
       <div class="card"><div class="label">Total spend</div><div class="value" id="c-total">$0</div></div>
       <div class="card"><div class="label">Transactions</div><div class="value" id="c-count">0</div></div>

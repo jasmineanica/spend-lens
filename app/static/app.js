@@ -130,16 +130,79 @@ document.getElementById("btn-demo").onclick = async () => {
   mergeData(await r.json(), { replace: true });
 };
 
+const progressWrap = document.getElementById("progress-wrap");
+const progressFill = document.getElementById("progress-fill");
+const progressLabel = document.getElementById("progress-label");
+
+function showProgress(indeterminate, label) {
+  progressWrap.hidden = false;
+  progressWrap.classList.toggle("indeterminate", !!indeterminate);
+  if (!indeterminate) progressFill.style.width = "0%";
+  progressLabel.textContent = label || "";
+}
+function updateProgress(done, total) {
+  progressWrap.classList.remove("indeterminate");
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  progressFill.style.width = pct + "%";
+  progressLabel.textContent = `Scanned ${done.toLocaleString()} / ${total.toLocaleString()} emails (${pct}%)`;
+}
+function hideProgress() {
+  progressWrap.hidden = true;
+  progressWrap.classList.remove("indeterminate");
+  progressFill.style.width = "0%";
+  progressLabel.textContent = "";
+}
+
+// Stream NDJSON progress from the server while a (possibly large) mbox is parsed.
+async function parseMboxStreaming(file) {
+  showProgress(true, "Reading file…");
+  const fd = new FormData(); fd.append("file", file);
+  const resp = await fetch("/api/parse/mbox-stream", { method: "POST", body: fd });
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "", result = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, idx).trim(); buf = buf.slice(idx + 1);
+      if (!line) continue;
+      const msg = JSON.parse(line);
+      if (msg.type === "progress") updateProgress(msg.processed, msg.total);
+      else if (msg.type === "result") result = msg.dataset;
+    }
+  }
+  hideProgress();
+  return result;
+}
+
 document.getElementById("file-csv").onchange = async (e) => {
   const file = e.target.files[0]; if (!file) return;
+  const isMbox = /\.mbox$/i.test(file.name);
   const isEmail = /\.(eml|mbox)$/i.test(file.name);
-  setStatus(isEmail ? "Parsing email file…" : "Parsing CSV…");
-  const fd = new FormData(); fd.append("file", file);
-  const r = await fetch("/api/parse/upload", { method: "POST", body: fd });
-  const ds = await r.json();
-  const n = (ds.transactions?.length || 0) + (ds.investments?.length || 0);
-  if (!n) { setStatus(isEmail ? "No transactions found in that email file." : "No rows recognized in that CSV."); return; }
-  mergeData(ds);
+  try {
+    let ds;
+    if (isMbox) {
+      ds = await parseMboxStreaming(file);
+    } else {
+      showProgress(true, isEmail ? "Parsing email…" : "Parsing CSV…");
+      const fd = new FormData(); fd.append("file", file);
+      const r = await fetch("/api/parse/upload", { method: "POST", body: fd });
+      ds = await r.json();
+      hideProgress();
+    }
+    const n = (ds?.transactions?.length || 0) + (ds?.investments?.length || 0);
+    if (!n) {
+      setStatus(isEmail ? "No transactions found in that email file." : "No rows recognized in that CSV.");
+    } else {
+      mergeData(ds);
+    }
+  } catch (err) {
+    hideProgress();
+    setStatus("Upload failed: " + err.message);
+  }
   e.target.value = "";
 };
 

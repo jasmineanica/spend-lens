@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 
 from .categorize import BUDGET, TAXONOMY
+from .reconcile import reconcile
 from .schemas import Dataset
 
 BUCKET_ORDER = ["Needs", "Wants", "Savings", "Uncategorized"]
@@ -27,6 +28,7 @@ def _round(v: float) -> float:
 
 
 def analyze(dataset: Dataset, month: Optional[str] = None) -> dict:
+    dataset = reconcile(dataset)
     df = _txn_frame(dataset)
 
     if df.empty:
@@ -128,6 +130,7 @@ def _investments(dataset: Dataset) -> dict:
 
 
 def query(dataset: Dataset, q: str, month: Optional[str] = None) -> dict:
+    dataset = reconcile(dataset)
     df = _txn_frame(dataset)
     q_norm = (q or "").strip().lower()
     if df.empty or not q_norm:

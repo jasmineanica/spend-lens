@@ -57,13 +57,22 @@ def parse_email_text(raw: str) -> Dataset:
             date=_find_date(text), source="wealthfront", kind="deposit",
             amount=_money(m.group(1))))
 
-    # Venmo: "You paid Jordan $32.00" / "Jordan paid you $32.00"
+    # Venmo outgoing: "You paid Jordan $32.00"
     for m in re.finditer(r"you paid\s+(.+?)\s+" + _AMOUNT, text, re.IGNORECASE):
         merchant = f"Venmo - {m.group(1).strip()}"
         cat, bucket = categorize(merchant)
         txns.append(Transaction(
             date=_find_date(text), source="venmo", merchant=merchant,
             amount=_money(m.group(2)), category=cat, bucket=bucket))
+
+    # Venmo incoming: "Miguel paid you $50.00" -> a reimbursement (negative spend).
+    # Reconciled against a matching purchase at analysis time (see reconcile.py).
+    for m in re.finditer(r"([A-Za-z][\w .'\-]{1,40}?)\s+paid you\s+" + _AMOUNT, text, re.IGNORECASE):
+        payer = m.group(1).strip()
+        txns.append(Transaction(
+            date=_find_date(text), source="venmo", txn_type="reimbursement",
+            merchant=f"Venmo - {payer}", description="Reimbursement",
+            amount=-_money(m.group(2)), category="Reimbursement", bucket="Uncategorized"))
 
     # Chase alert: "You made a $12.34 transaction with STARBUCKS" and variants.
     chase_patterns = [

@@ -37,6 +37,25 @@ button:hover, .filebtn:hover { filter: brightness(1.05); }
 select { font: inherit; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
 .status { color: #6b7860; font-size: .9rem; }
 
+.upload-section { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+  background: var(--card); margin-bottom: 16px; }
+.upload-section h3 { margin: 0 0 10px; border: none; padding: 0; }
+.upload-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.upload-row .hint { color: #6b7860; font-size: .9rem; }
+.upload-row code { background: #e6ecd9; padding: 1px 5px; border-radius: 4px; }
+
+.progress-wrap { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.progress-track { flex: 1; height: 10px; background: #e6ecd9; border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: var(--green); border-radius: 999px;
+  transition: width .2s ease; }
+.progress-wrap.indeterminate .progress-fill { width: 40%; animation: indet 1.1s ease-in-out infinite; }
+@keyframes indet { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+.progress-label { color: var(--green-dark); font-size: .85rem; white-space: nowrap; }
+
+.dash-header { display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
+.month-pick { color: #6b7860; }
+
 .paste-panel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .paste-panel textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 10px; font: inherit; }
 .paste-panel button { align-self: flex-start; }

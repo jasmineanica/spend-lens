@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi.testclient import TestClient
 
 from app import analytics, demo
@@ -8,7 +10,9 @@ from app.main import app
 from app.parse.csv_import import parse_csv, parse_fidelity_csv, parse_transactions_csv
 from app.parse.email_text import parse_email_text
 from app.parse.eml_import import eml_to_text, parse_eml, parse_mbox
+from app.reconcile import reconcile
 from app.report import generate_pdf
+from app.schemas import Dataset, Transaction
 
 SAMPLE_EML = (
     b"From: alerts@chase.com\r\n"
@@ -140,6 +144,23 @@ def test_parse_mbox_multiple_messages():
     assert dates == {"2026-07-03", "2026-07-04"}  # per-message dates preserved
 
 
+def test_mbox_stream_endpoint():
+    mbox = (
+        _mbox_msg("alerts@chase.com", "a", "Fri, 3 Jul 2026 10:00:00 -0700",
+                  "You made a $4.50 transaction with PHILZ COFFEE.")
+        + b"\n"
+        + _mbox_msg("alerts@chase.com", "a", "Sat, 4 Jul 2026 10:00:00 -0700",
+                    "You made a $54.20 transaction with SAFEWAY.")
+    )
+    r = client.post("/api/parse/mbox-stream",
+                    files={"file": ("takeout.mbox", mbox, "application/mbox")})
+    assert r.status_code == 200
+    lines = [json.loads(ln) for ln in r.text.splitlines() if ln.strip()]
+    assert any(ln["type"] == "progress" for ln in lines)
+    assert lines[-1]["type"] == "result"
+    assert len(lines[-1]["dataset"]["transactions"]) == 2
+
+
 def test_upload_endpoint_dispatch():
     # .eml routes to the email parser
     eml = client.post("/api/parse/upload",
@@ -150,6 +171,47 @@ def test_upload_endpoint_dispatch():
     up = client.post("/api/parse/upload",
                      files={"file": ("txns.csv", csv, "text/csv")})
     assert up.json()["transactions"][0]["category"] == "Groceries"
+
+
+# --- reimbursement / split reconciliation ---
+def test_parse_incoming_venmo_reimbursement():
+    ds = parse_email_text("Miguel paid you $50.00")
+    assert len(ds.transactions) == 1
+    t = ds.transactions[0]
+    assert t.txn_type == "reimbursement" and t.amount == -50.0
+    assert t.merchant == "Venmo - Miguel" and t.source == "venmo"
+
+
+def test_reconcile_nets_split_into_category():
+    ds = Dataset(transactions=[
+        Transaction(date="2026-07-01", source="chase", merchant="Ticketmaster",
+                    amount=100.0, category="Entertainment", bucket="Wants"),
+        Transaction(date="2026-07-02", source="venmo", txn_type="reimbursement",
+                    merchant="Venmo - Miguel", amount=-50.0,
+                    category="Reimbursement", bucket="Uncategorized"),
+    ])
+    reimb = [t for t in reconcile(ds).transactions if t.txn_type == "reimbursement"][0]
+    assert reimb.category == "Entertainment" and reimb.bucket == "Wants"
+
+    r = analytics.analyze(ds, "2026-07")
+    ent = next(c for c in r["by_category"] if c["category"] == "Entertainment")
+    assert ent["amount"] == 50.0          # $100 - $50 nets to $50
+    assert r["by_bucket"]["Wants"] == 50.0
+    assert r["summary"]["total_spend"] == 50.0
+
+
+def test_reconcile_unmatched_still_reduces_total():
+    ds = Dataset(transactions=[
+        Transaction(date="2026-07-01", source="chase", merchant="Rent",
+                    amount=30.0, category="Rent / Mortgage", bucket="Needs"),
+        Transaction(date="2026-07-02", source="venmo", txn_type="reimbursement",
+                    merchant="Venmo - Sam", amount=-50.0,
+                    category="Reimbursement", bucket="Uncategorized"),
+    ])
+    # $50 reimbursement can't match a $30 charge; stays 'Reimbursement' but still nets.
+    reimb = [t for t in reconcile(ds).transactions if t.txn_type == "reimbursement"][0]
+    assert reimb.category == "Reimbursement"
+    assert analytics.analyze(ds, "2026-07")["summary"]["total_spend"] == -20.0
 
 
 # --- report ---

@@ -100,5 +100,15 @@ def generate(months: int = 3, seed: int = 7) -> Dataset:
                 symbol=sym, quantity=qty, price=price, amount=round(qty * price, 2)))
         m += relativedelta(months=1)
 
+    # A split-expense example: user fronts $120 for concert tickets, a friend
+    # Venmos back their half the next day (reconciled to net $60 of Entertainment).
+    split_day = today - timedelta(days=6)
+    txns.append(_mk(split_day, "Ticketmaster", 120.0, description="Concert tickets (split)"))
+    txns.append(Transaction(
+        date=(split_day + timedelta(days=1)).isoformat(), source="venmo",
+        txn_type="reimbursement", merchant="Venmo - Miguel",
+        description="Reimbursement", amount=-60.0,
+        category="Reimbursement", bucket="Uncategorized"))
+
     txns.sort(key=lambda t: t.date)
     return Dataset(transactions=txns, investments=investments)

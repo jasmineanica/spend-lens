@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -11,7 +12,7 @@ from . import analytics, demo
 from .config import APP_DIR, get_settings
 from .parse.csv_import import parse_csv
 from .parse.email_text import parse_email_text
-from .parse.eml_import import parse_eml, parse_mbox
+from .parse.eml_import import _MAX_MBOX_MESSAGES, _split_mbox, parse_eml, parse_mbox
 from .report import generate_pdf
 from .schemas import AnalyzeRequest, Dataset, EmailRequest, QueryRequest
 
@@ -44,6 +45,32 @@ async def api_parse_upload(file: UploadFile = File(...)) -> Dataset:
     if name.endswith(".eml") or ctype.startswith("message/"):
         return parse_eml(raw)
     return parse_csv(file.filename or "upload.csv", raw.decode("utf-8", errors="replace"))
+
+
+@app.post("/api/parse/mbox-stream")
+async def api_parse_mbox_stream(file: UploadFile = File(...)) -> StreamingResponse:
+    """Parse a (potentially large) mbox, streaming NDJSON progress as it goes.
+
+    Emits {"type":"progress","processed","total"} lines then a final
+    {"type":"result","dataset":...}. Nothing is stored — the dataset is streamed
+    to the browser and discarded server-side."""
+    raw = await file.read()
+    messages = _split_mbox(raw)[:_MAX_MBOX_MESSAGES]
+    total = len(messages)
+
+    def gen():
+        txns, inv = [], []
+        yield json.dumps({"type": "progress", "processed": 0, "total": total}) + "\n"
+        for i, msg in enumerate(messages, 1):
+            ds = parse_eml(msg)
+            txns.extend(t.model_dump() for t in ds.transactions)
+            inv.extend(e.model_dump() for e in ds.investments)
+            if i % 50 == 0 or i == total:
+                yield json.dumps({"type": "progress", "processed": i, "total": total}) + "\n"
+        yield json.dumps({"type": "result",
+                          "dataset": {"transactions": txns, "investments": inv}}) + "\n"
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson")
 
 
 @app.post("/api/parse/email")

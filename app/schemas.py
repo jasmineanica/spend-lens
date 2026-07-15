@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-TxnType = Literal["expense", "refund"]
+TxnType = Literal["expense", "refund", "reimbursement"]
 TxnSource = Literal["chase", "venmo", "manual", "demo"]
 InvestmentSource = Literal["wealthfront", "fidelity", "demo"]
 InvestmentKind = Literal["deposit", "buy", "sell"]

@@ -67,4 +67,13 @@ pytest
   run through the same email parser.
 - **`.mbox` file** — a batch export (e.g. Google Takeout of a "Chase Alerts" label). Split
   in-memory into individual messages; each is parsed on its own so per-message dates are kept,
-  and non-transaction emails are ignored.
+  and non-transaction emails are ignored. Large mailboxes stream parse progress to a progress
+  bar so you can see how far along it is.
+
+## Split expenses / reimbursements
+
+If you paid for something and a friend Venmos you back their share, the incoming Venmo
+("Miguel paid you $50.00") is treated as a **reimbursement**: it's matched to the nearest
+purchase you fronted (same-ish date, amount you paid ≥ what you got back) and netted out of
+that category. A $100 dinner + a $50 payback reads as **$50 of Dining Out**. Unmatched
+reimbursements still reduce your total but keep the label "Reimbursement".
