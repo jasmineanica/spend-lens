@@ -7,7 +7,7 @@ from app.categorize import categorize
 from app.main import app
 from app.parse.csv_import import parse_csv, parse_fidelity_csv, parse_transactions_csv
 from app.parse.email_text import parse_email_text
-from app.parse.eml_import import eml_to_text, parse_eml
+from app.parse.eml_import import eml_to_text, parse_eml, parse_mbox
 from app.report import generate_pdf
 
 SAMPLE_EML = (
@@ -111,6 +111,33 @@ def test_eml_to_text_and_parse():
     assert len(ds.transactions) == 1
     t = ds.transactions[0]
     assert t.amount == 12.34 and t.category == "Coffee" and t.date == "2026-07-03"
+
+
+def _mbox_msg(sender, subject, date_str, body):
+    return (
+        f"From {sender} {date_str}\r\n"
+        f"From: {sender}\r\nSubject: {subject}\r\nDate: {date_str}\r\n"
+        f"Content-Type: text/plain; charset=utf-8\r\n\r\n{body}\r\n"
+    ).encode()
+
+
+def test_parse_mbox_multiple_messages():
+    mbox = (
+        _mbox_msg("alerts@chase.com", "alert", "Fri, 3 Jul 2026 10:00:00 -0700",
+                  "You made a $12.34 transaction with STARBUCKS.")
+        + b"\n"
+        + _mbox_msg("alerts@chase.com", "alert", "Sat, 4 Jul 2026 09:00:00 -0700",
+                    "You made a $54.20 transaction with SAFEWAY.")
+        + b"\n"
+        + _mbox_msg("news@example.com", "Newsletter", "Sun, 5 Jul 2026 09:00:00 -0700",
+                    "Nothing financial here.")
+    )
+    ds = parse_mbox(mbox)
+    assert len(ds.transactions) == 2  # newsletter yields nothing
+    cats = {t.category for t in ds.transactions}
+    dates = {t.date for t in ds.transactions}
+    assert cats == {"Coffee", "Groceries"}
+    assert dates == {"2026-07-03", "2026-07-04"}  # per-message dates preserved
 
 
 def test_upload_endpoint_dispatch():

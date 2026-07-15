@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import re
 from email import policy
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 
 from ..schemas import Dataset
 from .email_text import parse_email_text
+
+# Split an mbox before each envelope "From " line (line at column 0 starting with
+# "From " and ending in a 4-digit year). Well-formed mbox escapes body lines as
+# ">From ", so this reliably separates messages without writing to disk.
+_MBOX_BOUNDARY = re.compile(rb"\n(?=From .+\d{4}\r?\n)")
+_MAX_MBOX_MESSAGES = 20000  # safety cap for very large exports
 
 
 def eml_to_text(raw: bytes) -> str:
@@ -52,3 +59,29 @@ def eml_to_text(raw: bytes) -> str:
 
 def parse_eml(raw: bytes) -> Dataset:
     return parse_email_text(eml_to_text(raw))
+
+
+def _split_mbox(raw: bytes) -> list[bytes]:
+    """Split mbox bytes into individual message bodies (envelope line removed)."""
+    chunks = _MBOX_BOUNDARY.split(b"\n" + raw)
+    messages: list[bytes] = []
+    for chunk in chunks:
+        chunk = chunk.lstrip(b"\r\n")
+        if chunk.startswith(b"From "):  # drop the non-RFC822 envelope line
+            nl = chunk.find(b"\n")
+            chunk = chunk[nl + 1:] if nl != -1 else b""
+        if chunk.strip():
+            messages.append(chunk)
+    return messages
+
+
+def parse_mbox(raw: bytes) -> Dataset:
+    """Parse an mbox export (e.g. Google Takeout). Each message is parsed on its
+    own so per-message dates are preserved; non-transaction emails yield nothing."""
+    txns = []
+    investments = []
+    for msg in _split_mbox(raw)[:_MAX_MBOX_MESSAGES]:
+        ds = parse_eml(msg)
+        txns.extend(ds.transactions)
+        investments.extend(ds.investments)
+    return Dataset(transactions=txns, investments=investments)

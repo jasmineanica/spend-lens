@@ -132,13 +132,13 @@ document.getElementById("btn-demo").onclick = async () => {
 
 document.getElementById("file-csv").onchange = async (e) => {
   const file = e.target.files[0]; if (!file) return;
-  const isEml = /\.eml$/i.test(file.name);
-  setStatus(isEml ? "Parsing email file…" : "Parsing CSV…");
+  const isEmail = /\.(eml|mbox)$/i.test(file.name);
+  setStatus(isEmail ? "Parsing email file…" : "Parsing CSV…");
   const fd = new FormData(); fd.append("file", file);
   const r = await fetch("/api/parse/upload", { method: "POST", body: fd });
   const ds = await r.json();
   const n = (ds.transactions?.length || 0) + (ds.investments?.length || 0);
-  if (!n) { setStatus(isEml ? "Couldn't find a transaction in that .eml." : "No rows recognized in that CSV."); return; }
+  if (!n) { setStatus(isEmail ? "No transactions found in that email file." : "No rows recognized in that CSV."); return; }
   mergeData(ds);
   e.target.value = "";
 };

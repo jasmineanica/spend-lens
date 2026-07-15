@@ -65,3 +65,6 @@ pytest
   trade confirmations (plain text or HTML).
 - **`.eml` file** — upload a saved email; its subject, body, and date header are extracted and
   run through the same email parser.
+- **`.mbox` file** — a batch export (e.g. Google Takeout of a "Chase Alerts" label). Split
+  in-memory into individual messages; each is parsed on its own so per-message dates are kept,
+  and non-transaction emails are ignored.
