@@ -56,9 +56,13 @@ select { font: inherit; padding: 7px 10px; border: 1px solid var(--border); bord
   gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
 .month-pick { color: #6b7860; }
 
-.paste-panel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.paste-panel textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 10px; font: inherit; }
-.paste-panel button { align-self: flex-start; }
+.paste-section { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+  background: var(--card); margin-bottom: 16px; }
+.paste-section h3 { margin: 0 0 4px; border: none; padding: 0; }
+.paste-section .hint { color: #6b7860; font-size: .9rem; margin: 0 0 10px; }
+.paste-section textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px; font: inherit; margin-bottom: 8px; }
+.paste-section button { align-self: flex-start; }
 
 .empty { border: 1px dashed var(--border); border-radius: 8px; padding: 28px; text-align: center; color: #6b7860; background: var(--card); }
 

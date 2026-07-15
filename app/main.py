@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
+import os
+import tempfile
 
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -12,7 +15,7 @@ from . import analytics, demo
 from .config import APP_DIR, get_settings
 from .parse.csv_import import parse_csv
 from .parse.email_text import parse_email_text
-from .parse.eml_import import _MAX_MBOX_MESSAGES, _split_mbox, parse_eml, parse_mbox
+from .parse.eml_import import _MAX_MBOX_MESSAGES, iter_mbox_messages, parse_eml, parse_mbox
 from .report import generate_pdf
 from .schemas import AnalyzeRequest, Dataset, EmailRequest, QueryRequest
 
@@ -21,11 +24,27 @@ app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="stati
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
 
 
+def _asset_version() -> str:
+    """Hash the front-end assets so their ?v= query busts browser caches on
+    every change (no more stale JS/CSS after a deploy)."""
+    h = hashlib.sha1()
+    for rel in ("static/app.js", "static/styles.css", "templates/dashboard.html"):
+        try:
+            h.update((APP_DIR / rel).read_bytes())
+        except OSError:
+            pass
+    return h.hexdigest()[:8]
+
+
+ASSET_VERSION = _asset_version()
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "enable_llm": get_settings().enable_llm},
+        {"request": request, "enable_llm": get_settings().enable_llm,
+         "asset_version": ASSET_VERSION},
     )
 
 
@@ -54,21 +73,47 @@ async def api_parse_mbox_stream(file: UploadFile = File(...)) -> StreamingRespon
     Emits {"type":"progress","processed","total"} lines then a final
     {"type":"result","dataset":...}. Nothing is stored — the dataset is streamed
     to the browser and discarded server-side."""
-    raw = await file.read()
-    messages = _split_mbox(raw)[:_MAX_MBOX_MESSAGES]
-    total = len(messages)
+    # Copy the upload to our own temp file in chunks (bounded memory). We can't
+    # read the UploadFile inside the generator below — FastAPI closes it once
+    # this handler returns — so we own a temp file and delete it when done.
+    tmp = tempfile.NamedTemporaryFile(prefix="spendlens_", suffix=".mbox", delete=False)
+    size = 0
+    try:
+        while chunk := await file.read(1024 * 1024):
+            tmp.write(chunk)
+            size += len(chunk)
+    finally:
+        tmp.close()
+    path = tmp.name
 
     def gen():
         txns, inv = [], []
-        yield json.dumps({"type": "progress", "processed": 0, "total": total}) + "\n"
-        for i, msg in enumerate(messages, 1):
-            ds = parse_eml(msg)
-            txns.extend(t.model_dump() for t in ds.transactions)
-            inv.extend(e.model_dump() for e in ds.investments)
-            if i % 50 == 0 or i == total:
-                yield json.dumps({"type": "progress", "processed": i, "total": total}) + "\n"
-        yield json.dumps({"type": "result",
-                          "dataset": {"transactions": txns, "investments": inv}}) + "\n"
+        count = 0
+        done = 0
+        try:
+            yield json.dumps({"type": "progress", "processed": 0, "total": size}) + "\n"
+            with open(path, "rb") as f:
+                for msg in iter_mbox_messages(f):
+                    count += 1
+                    done += len(msg)
+                    if count > _MAX_MBOX_MESSAGES:
+                        break
+                    try:
+                        ds = parse_eml(msg)
+                        txns.extend(t.model_dump() for t in ds.transactions)
+                        inv.extend(e.model_dump() for e in ds.investments)
+                    except Exception:
+                        pass  # skip a malformed message, keep going
+                    if count % 200 == 0:
+                        yield json.dumps({"type": "progress", "processed": min(done, size) if size else done,
+                                          "total": size, "found": len(txns)}) + "\n"
+            yield json.dumps({"type": "result", "found": len(txns),
+                              "dataset": {"transactions": txns, "investments": inv}}) + "\n"
+        finally:
+            try:
+                os.remove(path)  # never persist the user's email data
+            except OSError:
+                pass
 
     return StreamingResponse(gen(), media_type="application/x-ndjson")
 

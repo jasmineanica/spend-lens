@@ -4,6 +4,7 @@ import re
 from email import policy
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
+from typing import Iterator
 
 from ..schemas import Dataset
 from .email_text import parse_email_text
@@ -12,7 +13,39 @@ from .email_text import parse_email_text
 # "From " and ending in a 4-digit year). Well-formed mbox escapes body lines as
 # ">From ", so this reliably separates messages without writing to disk.
 _MBOX_BOUNDARY = re.compile(rb"\n(?=From .+\d{4}\r?\n)")
-_MAX_MBOX_MESSAGES = 20000  # safety cap for very large exports
+_ENVELOPE_LINE = re.compile(rb"^From .*\d{4}\s*$")
+_MAX_MBOX_MESSAGES = 100000  # safety cap for very large exports
+_MAX_MSG_BYTES = 2_000_000   # skip pathologically large messages (e.g. attachments)
+
+
+def _is_envelope(line: bytes) -> bool:
+    return line.startswith(b"From ") and _ENVELOPE_LINE.match(line.rstrip(b"\r\n")) is not None
+
+
+def iter_mbox_messages(fileobj) -> Iterator[bytes]:
+    """Yield raw message bytes from an mbox *file object*, one at a time.
+
+    Reads line by line, so a large upload (which the server spools to a temp
+    file) never has to be held in RAM in full — this is what keeps a 100MB+
+    mailbox within a 512MB instance. Oversized single messages are skipped."""
+    buf = bytearray()
+    started = False
+    oversized = False
+    for line in fileobj:
+        if _is_envelope(line):
+            if started and buf and not oversized:
+                yield bytes(buf)
+            buf = bytearray()
+            started = True
+            oversized = False
+            continue
+        if started and not oversized:
+            buf += line
+            if len(buf) > _MAX_MSG_BYTES:
+                oversized = True
+                buf = bytearray()
+    if started and buf and not oversized:
+        yield bytes(buf)
 
 
 def eml_to_text(raw: bytes) -> str:

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spend Lens — private, stateless spending analyzer</title>
-<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/styles.css?v={{ asset_version }}">
 </head>
 <body>
 <section id="landing" class="landing">
@@ -25,13 +25,13 @@
 
 <div class="banner wrap">
   <strong>Your data is never stored.</strong> Everything you load lives only in this browser tab and
-  is analyzed in-memory. Close or refresh the tab and it's gone — nothing is written to a server or database.
+  is analyzed on the fly — there's no database, and any temporary file used to parse a large upload is
+  deleted the moment parsing finishes. Close or refresh the tab and it's gone.
 </div>
 
 <main class="wrap">
   <section class="controls">
     <button id="btn-demo" class="primary">Load demo data</button>
-    <button id="btn-paste">Paste an email</button>
     <button id="btn-clear" class="ghost">Clear</button>
     <span id="status" class="status"></span>
   </section>
@@ -48,8 +48,10 @@
     </div>
   </section>
 
-  <section id="paste-panel" class="paste-panel" hidden>
-    <textarea id="paste-text" rows="5" placeholder="Paste a Chase / Venmo / Wealthfront / Fidelity notification email here..."></textarea>
+  <section class="paste-section">
+    <h3>Paste an email</h3>
+    <p class="hint">Or paste a single Chase / Venmo / Wealthfront / Fidelity notification below.</p>
+    <textarea id="paste-text" rows="4" placeholder="Paste a notification email here…"></textarea>
     <button id="btn-paste-go" class="primary">Parse email</button>
   </section>
 
@@ -102,6 +104,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v={{ asset_version }}"></script>
 </body>
 </html>

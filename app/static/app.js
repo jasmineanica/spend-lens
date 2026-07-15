@@ -140,11 +140,15 @@ function showProgress(indeterminate, label) {
   if (!indeterminate) progressFill.style.width = "0%";
   progressLabel.textContent = label || "";
 }
-function updateProgress(done, total) {
+function updateProgress(done, total, found) {
   progressWrap.classList.remove("indeterminate");
   const pct = total ? Math.round((done / total) * 100) : 0;
   progressFill.style.width = pct + "%";
-  progressLabel.textContent = `Scanned ${done.toLocaleString()} / ${total.toLocaleString()} emails (${pct}%)`;
+  const mb = (n) => (n / 1048576).toFixed(1);
+  const foundStr = found != null ? ` · ${found.toLocaleString()} transactions found` : "";
+  progressLabel.textContent = total
+    ? `Scanned ${mb(done)} / ${mb(total)} MB (${pct}%)${foundStr}`
+    : `Parsing…${foundStr}`;
 }
 function hideProgress() {
   progressWrap.hidden = true;
@@ -170,7 +174,7 @@ async function parseMboxStreaming(file) {
       const line = buf.slice(0, idx).trim(); buf = buf.slice(idx + 1);
       if (!line) continue;
       const msg = JSON.parse(line);
-      if (msg.type === "progress") updateProgress(msg.processed, msg.total);
+      if (msg.type === "progress") updateProgress(msg.processed, msg.total, msg.found);
       else if (msg.type === "result") result = msg.dataset;
     }
   }
@@ -206,9 +210,6 @@ document.getElementById("file-csv").onchange = async (e) => {
   e.target.value = "";
 };
 
-document.getElementById("btn-paste").onclick = () => {
-  const p = document.getElementById("paste-panel"); p.hidden = !p.hidden;
-};
 document.getElementById("btn-paste-go").onclick = async () => {
   const text = document.getElementById("paste-text").value.trim();
   if (!text) return;
@@ -220,7 +221,6 @@ document.getElementById("btn-paste-go").onclick = async () => {
   const n = (ds.transactions?.length || 0) + (ds.investments?.length || 0);
   if (!n) { setStatus("Couldn't find a transaction in that text."); return; }
   document.getElementById("paste-text").value = "";
-  document.getElementById("paste-panel").hidden = true;
   mergeData(ds);
 };
 
