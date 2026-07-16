@@ -59,6 +59,11 @@ select { font: inherit; padding: 7px 10px; border: 1px solid var(--border); bord
 .dash-header { display: flex; justify-content: space-between; align-items: center;
   gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
 .month-nav { display: flex; align-items: center; gap: 6px; }
+.report-area { display: flex; align-items: center; gap: 10px; }
+.report-status { display: inline-flex; align-items: center; gap: 6px; color: var(--green-dark); font-size: .85rem; }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--green-dark);
+  border-radius: 50%; display: inline-block; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .month-pick { color: #6b7860; }
 .nav-arrow { padding: 6px 11px; line-height: 1; }
 button:disabled { opacity: .4; cursor: default; filter: none; }
@@ -99,4 +104,30 @@ footer { color: #8a967d; font-size: .85rem; margin: 40px 0 24px; }
 @media (max-width: 720px) {
   .cards { grid-template-columns: repeat(2, 1fr); }
   .charts-grid, .two-col { grid-template-columns: 1fr; }
+}
+
+/* --- Printable report (browser "Save as PDF"); hidden on screen --- */
+#print-report { display: none; }
+#print-report h1 { color: var(--green-dark); font-size: 22px; margin: 0 0 2px; }
+#print-report h2 { color: var(--green-dark); font-size: 14px; border-bottom: 1px solid var(--border);
+  padding-bottom: 2px; margin: 16px 0 8px; }
+#print-report .pr-sub { color: #6b7860; margin: 0 0 12px; font-size: 11px; }
+#print-report .pr-cards { display: flex; gap: 8px; margin: 6px 0 10px; }
+#print-report .pr-card { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; background: var(--card); }
+#print-report .pr-card .l { color: #6b7860; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
+#print-report .pr-card .v { font-size: 15px; font-weight: 700; color: var(--green-dark); }
+#print-report .pr-charts { display: flex; gap: 12px; align-items: flex-start; margin: 6px 0; }
+#print-report .pr-charts > div { width: 48%; }
+#print-report .pr-trend { width: 85%; margin: 6px 0; }
+#print-report table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
+#print-report th, #print-report td { text-align: left; padding: 3px 6px; border-bottom: 1px solid #e6ecd9; }
+#print-report th { background: #e6ecd9; color: var(--green-dark); }
+#print-report td.num, #print-report th.num { text-align: right; }
+#print-report .pr-month { page-break-inside: avoid; margin-top: 16px; }
+#print-report .pr-foot { margin-top: 18px; color: #8a967d; font-size: 9px; }
+
+@media print {
+  body > *:not(#print-report) { display: none !important; }
+  #print-report { display: block; font-size: 11px; color: var(--text); }
+  @page { size: Letter; margin: 1.4cm; }
 }

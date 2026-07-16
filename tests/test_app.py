@@ -278,6 +278,10 @@ def test_endpoints_roundtrip():
     assert rep.status_code == 200 and rep.content[:4] == b"%PDF"
     assert rep.headers["content-type"] == "application/pdf"
 
+    allm = client.post("/api/analyze-all", json={"dataset": ds, "month": None}).json()
+    assert len(allm["months"]) == len(allm["overall"]["months"]) >= 1
+    assert allm["months"][0]["summary"]["txn_count"] > 0
+
     email = client.post("/api/parse/email",
                         json={"text": "You made a $5.00 transaction with PHILZ COFFEE"})
     assert email.json()["transactions"][0]["category"] == "Coffee"

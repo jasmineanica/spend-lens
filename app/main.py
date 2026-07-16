@@ -133,6 +133,11 @@ def api_query(req: QueryRequest) -> dict:
     return analytics.query(req.dataset, req.q, req.month)
 
 
+@app.post("/api/analyze-all")
+def api_analyze_all(req: AnalyzeRequest) -> dict:
+    return analytics.analyze_all(req.dataset)
+
+
 @app.post("/api/report")
 def api_report(req: AnalyzeRequest) -> StreamingResponse:
     pdf = generate_pdf(req.dataset, req.month)  # bytes, never written to disk

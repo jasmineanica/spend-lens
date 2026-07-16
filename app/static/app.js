@@ -151,6 +151,105 @@ function renderInvest(inv) {
     <p><strong>Trades:</strong> ${inv.trade_count}</p>`;
 }
 
+// --- printable report (client-side; browser "Save as PDF") ---
+const CHART_GREEN = ["#5f7a4f", "#889d7b", "#b6c7a6", "#3d5430", "#cdd8c1", "#7a8f66", "#a4b58f"];
+function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+function svgWrap(title, w, h, body) {
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica,Arial,sans-serif">` +
+    `<text x="0" y="14" font-size="12" font-weight="bold" fill="#3d5430">${esc(title)}</text>${body}</svg>`;
+}
+function donutSVG(pairs, title) {
+  pairs = pairs.filter((p) => p[1] > 0);
+  const total = pairs.reduce((a, p) => a + p[1], 0);
+  const cx = 70, cy = 105, r = 52, sw = 24, circ = 2 * Math.PI * r;
+  let off = 0, segs = "", leg = "", ly = 46;
+  pairs.forEach((p, i) => {
+    const seg = total ? circ * p[1] / total : 0;
+    segs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${CHART_GREEN[i % 7]}" stroke-width="${sw}" stroke-dasharray="${seg.toFixed(2)} ${(circ - seg).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    off += seg;
+    leg += `<rect x="150" y="${ly - 9}" width="10" height="10" fill="${CHART_GREEN[i % 7]}"/><text x="166" y="${ly}" font-size="10">${esc(p[0])} ${(total ? p[1] / total * 100 : 0).toFixed(0)}%</text>`;
+    ly += 18;
+  });
+  return svgWrap(title, 300, 210, pairs.length ? segs + leg : `<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle">no data</text>`);
+}
+function hbarSVG(pairs, title) {
+  pairs = pairs.filter((p) => p[1] > 0).slice(0, 8);
+  const maxv = Math.max(1, ...pairs.map((p) => p[1])), bx = 118, bw = 200;
+  let y = 34, rows = "";
+  pairs.forEach((p) => {
+    const w = bw * p[1] / maxv;
+    rows += `<text x="0" y="${y + 11}" font-size="10">${esc(p[0].slice(0, 18))}</text><rect x="${bx}" y="${y}" width="${w.toFixed(1)}" height="14" rx="2" fill="#5f7a4f"/><text x="${(bx + w + 5).toFixed(1)}" y="${y + 11}" font-size="9" fill="#4a553f">$${Math.round(p[1]).toLocaleString()}</text>`;
+    y += 22;
+  });
+  return svgWrap(title, 360, Math.max(60, y + 6), rows || `<text x="0" y="40" font-size="10">no data</text>`);
+}
+function lineSVG(points, title) {
+  const w = 360, h = 150, pad = 26, maxv = Math.max(1, ...points.map((p) => p[1])), n = points.length;
+  const px = (i) => pad + (w - 2 * pad) * (n > 1 ? i / (n - 1) : 0.5);
+  const py = (v) => h - pad - (h - 2 * pad) * (v / maxv);
+  let dots = "", labels = "";
+  points.forEach((p, i) => {
+    dots += `<circle cx="${px(i).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="2.5" fill="#3d5430"/>`;
+    labels += `<text x="${px(i).toFixed(1)}" y="${h - 6}" font-size="8" text-anchor="middle">${esc(String(p[0]).slice(2))}</text>`;
+  });
+  let poly = "";
+  if (n > 1) poly = `<polyline points="${points.map((p, i) => `${px(i).toFixed(1)},${py(p[1]).toFixed(1)}`).join(" ")}" fill="none" stroke="#3d5430" stroke-width="2"/>`;
+  return svgWrap(title, w, h, (poly + dots + labels) || `<text x="0" y="40" font-size="10">no data</text>`);
+}
+
+function prCards(items) {
+  return `<div class="pr-cards">${items.map(([l, v]) => `<div class="pr-card"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>`;
+}
+function prCatTable(byCat) {
+  return `<table><tr><th>Category</th><th>Bucket</th><th class="num">Amount</th></tr>` +
+    byCat.map((c) => `<tr><td>${esc(c.category)}</td><td>${esc(c.bucket)}</td><td class="num">${money(c.amount)}</td></tr>`).join("") + `</table>`;
+}
+function runwayStr(b) { return b.runway_months ? b.runway_months.toFixed(1) + " mo" : "—"; }
+
+function buildPrintReport(all) {
+  const o = all.overall, md = all.months, multi = md.length > 1;
+  const today = new Date().toLocaleDateString();
+  let html = `<h1>🌿 Spend Lens report</h1>`;
+  if (multi) {
+    const grand = md.reduce((a, m) => a + m.summary.total_spend, 0);
+    html += `<p class="pr-sub">${md.length} months (${o.months[0]} – ${o.months[o.months.length - 1]}) · generated ${today} · data never stored</p>`;
+    html += prCards([["Total spend", money(grand)], ["Months", md.length], ["Avg / month", money(grand / md.length)], ["Top category", o.summary.top_category || "—"]]);
+    html += `<div class="pr-trend">${lineSVG(o.monthly.map((m) => [m.month, m.total]), "Monthly spend")}</div>`;
+    html += `<h2>Monthly totals</h2><table><tr><th>Month</th><th class="num">Total spend</th></tr>` +
+      o.monthly.map((m) => `<tr><td>${m.month}</td><td class="num">${money(m.total)}</td></tr>`).join("") + `</table>`;
+    md.forEach((m) => {
+      html += `<div class="pr-month"><h2>${m.month}</h2>` +
+        prCards([["Spend", money(m.summary.total_spend)], ["Transactions", m.summary.txn_count], ["Top category", m.summary.top_category || "—"], ["Runway", runwayStr(m.budget)]]) +
+        `<div class="pr-charts"><div>${donutSVG(Object.entries(m.by_bucket), "Spend by bucket")}</div><div>${hbarSVG(m.by_category.map((c) => [c.category, c.amount]), "Top categories")}</div></div>` +
+        prCatTable(m.by_category) + `</div>`;
+    });
+  } else {
+    const r = md[0] || o;
+    html += `<p class="pr-sub">Month ${r.month || "—"} · generated ${today} · data never stored</p>`;
+    html += prCards([["Total spend", money(r.summary.total_spend)], ["Transactions", r.summary.txn_count], ["Top category", r.summary.top_category || "—"], ["Runway", runwayStr(r.budget)]]);
+    html += `<div class="pr-charts"><div>${donutSVG(Object.entries(r.by_bucket), "Spend by bucket")}</div><div>${hbarSVG(r.by_category.map((c) => [c.category, c.amount]), "Top categories")}</div></div>`;
+    html += `<div class="pr-trend">${lineSVG(r.monthly.map((m) => [m.month, m.total]), "Monthly spend")}</div>`;
+    html += `<h2>By category</h2>` + prCatTable(r.by_category);
+    const b = r.budget;
+    html += `<h2>Budget vs. actual &amp; runway</h2><table><tr><th>Bucket</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Diff</th></tr>` +
+      Object.keys(b.targets).map((k) => `<tr><td>${k}</td><td class="num">${money(b.targets[k])}</td><td class="num">${money(b.actual[k])}</td><td class="num">${money(b.diff[k])}</td></tr>`).join("") + `</table>`;
+  }
+  if (o.investments && o.investments.events.length) {
+    const inv = o.investments;
+    html += `<h2>Investments</h2><p class="pr-sub">Deposited ${money(inv.total_deposited)} · invested ${money(inv.total_invested)} · ${inv.trade_count} trades</p>`;
+  }
+  html += `<p class="pr-foot">Spend Lens · generated in your browser. Figures are computed from the data you loaded and are not stored anywhere.</p>`;
+  document.getElementById("print-report").innerHTML = html;
+}
+
+function showReportStatus(txt, spin = true) {
+  const rs = document.getElementById("report-status");
+  document.getElementById("report-status-text").textContent = txt;
+  rs.querySelector(".spinner").style.display = spin ? "" : "none";
+  rs.hidden = false;
+}
+function hideReportStatus() { document.getElementById("report-status").hidden = true; }
+
 // --- actions ---
 document.getElementById("btn-start").onclick = () => {
   const landing = document.getElementById("landing");
@@ -295,25 +394,18 @@ document.getElementById("btn-report").onclick = async () => {
   if (!hasData()) return;
   const btn = document.getElementById("btn-report");
   btn.disabled = true;
-  setStatus("Building PDF…");
+  showReportStatus("Preparing report…");
   try {
-    const r = await fetch("/api/report", {
+    const r = await fetch("/api/analyze-all", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dataset, month: currentMonth }) });
-    if (!r.ok) { setStatus(`Report failed (${r.status}).`); return; }
-    const blob = await r.blob();
-    if (blob.type && blob.type.indexOf("pdf") === -1) { setStatus("Report failed to render."); return; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `spend-lens-report.pdf`;
-    document.body.appendChild(a);          // some browsers require the anchor in the DOM
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);  // revoke later so the download isn't canceled
-    setStatus("Report downloaded.");
+      body: JSON.stringify({ dataset, month: null }) });
+    if (!r.ok) { showReportStatus(`Report failed (${r.status}).`, false); return; }
+    buildPrintReport(await r.json());
+    hideReportStatus();
+    // Browser renders the printable report and opens the native print / Save-as-PDF dialog.
+    window.print();
   } catch (err) {
-    setStatus("Report error: " + err.message);
+    showReportStatus("Report error: " + err.message, false);
   } finally {
     btn.disabled = false;
   }

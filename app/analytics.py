@@ -130,6 +130,15 @@ def _investments(dataset: Dataset) -> dict:
     }
 
 
+def analyze_all(dataset: Dataset) -> dict:
+    """Overall analysis plus a per-month breakdown, reconciled once. Lightweight
+    JSON for the browser to render/print — no server-side PDF work."""
+    ds = reconcile(dataset)
+    overall = analyze(ds, None, reconcile_first=False)
+    months = [analyze(ds, m, reconcile_first=False) for m in overall["months"]]
+    return {"overall": overall, "months": months}
+
+
 def query(dataset: Dataset, q: str, month: Optional[str] = None) -> dict:
     dataset = reconcile(dataset)
     df = _txn_frame(dataset)

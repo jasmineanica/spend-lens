@@ -72,7 +72,10 @@
         <label class="month-pick">Month <select id="month-select" title="Month"></select></label>
         <button id="btn-next-month" class="nav-arrow" title="Next month" aria-label="Next month">▶</button>
       </div>
-      <button id="btn-report" class="primary">Download PDF report</button>
+      <div class="report-area">
+        <span id="report-status" class="report-status" hidden><span class="spinner"></span><span id="report-status-text">Preparing report…</span></span>
+        <button id="btn-report" class="primary">Save as PDF</button>
+      </div>
     </div>
     <div class="cards">
       <div class="card"><div class="label">Total spend</div><div class="value" id="c-total">$0</div></div>
@@ -111,6 +114,9 @@
   A portfolio piece by Jasmine Anica.</p>
 </footer>
 </div>
+
+<!-- Populated in JS and shown only when printing (browser "Save as PDF"). -->
+<div id="print-report"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v={{ asset_version }}"></script>

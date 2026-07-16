@@ -21,8 +21,10 @@ Close or refresh the tab and it's gone.
   merchants fall through to a **keyless Wikidata** lookup (`ENABLE_ENRICH`, safe on the public
   deploy — only the merchant string is sent), and then to an optional **Claude** fallback
   (`ENABLE_LLM`, local only). Chain: rules → Wikidata → Claude → Uncategorized.
-- **PDF reports** are rendered with matplotlib → Jinja2 → WeasyPrint and streamed back in
-  memory (never saved).
+- **PDF reports** are generated **client-side**: the browser fetches a lightweight per-month
+  analysis (`/api/analyze-all`), renders a printable report with inline SVG charts, and opens the
+  native **"Save as PDF"** dialog — instant, with zero server render cost (important on a free
+  instance). A server-rendered WeasyPrint report (`/api/report`) also remains available.
 
 ## Run locally
 
